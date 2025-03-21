@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "chrono": "cpp",
-        "bitset": "cpp",
-        "string_view": "cpp",
-        "cmath": "cpp"
-    }
-}
