@@ -28,7 +28,7 @@ find_package(visualization_msgs REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
 # Include generated message headers
-include_directories(${drone_tracker_message_INCLUDE_DIRSs})
+# include_directories(${drone_tracker_message_INCLUDE_DIRSs})
 
 # Generate messages in the 'msg' folder of drone_tracker package
 # rosidl_generate_interfaces(${PROJECT_NAME}
@@ -49,10 +49,10 @@ include_directories(include)
 
 # Create Cpp executable for path_planner
 add_executable(path_planner 
-  src/Nodes/ssPathPlanner.cpp 
-  src/Algorithms/Voxel.cpp
-  src/Algorithms/CostMap.cpp
-  src/Algorithms/Search.cpp
+  src/nodes/ssPathPlanner.cpp 
+  src/lib/Voxel.cpp
+  src/lib/CostMap.cpp
+  src/lib/Search.cpp
 )
 ament_target_dependencies(path_planner
   rclcpp
@@ -71,7 +71,7 @@ ament_target_dependencies(path_planner
 
 # Create Cpp executable for path_follower
 add_executable(path_follower
-  src/Nodes/ssPathFollower.cpp
+  src/nodes/ssPathFollower.cpp
 )
 ament_target_dependencies(path_follower
   rclcpp
@@ -83,10 +83,10 @@ ament_target_dependencies(path_follower
 )
 
 add_executable(demoBFS
-  src/Nodes/demoBFS.cpp
-  src/Algorithms/Voxel.cpp
-  src/Algorithms/CostMap.cpp
-  src/Algorithms/Search.cpp
+  src/nodes/demoBFS.cpp
+  src/lib/Voxel.cpp
+  src/lib/CostMap.cpp
+  src/lib/Search.cpp
 )
 ament_target_dependencies(demoBFS
   rclcpp
@@ -100,7 +100,7 @@ ament_target_dependencies(demoBFS
 
 
 find_package(ament_cmake_gtest REQUIRED)
-ament_add_gtest(tests test/tests.cpp src/Algorithms/Voxel.cpp src/Algorithms/CostMap.cpp)
+ament_add_gtest(tests test/tests.cpp src/lib/Voxel.cpp src/lib/CostMap.cpp)
 target_include_directories(tests PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>

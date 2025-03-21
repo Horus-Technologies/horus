@@ -1,3 +1,7 @@
+/*
+Demo node for breadth-first search on a voxel cost map grid.
+*/
+
 #include "Search.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <visualization_msgs/msg/marker_array.hpp>

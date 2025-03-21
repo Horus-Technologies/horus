@@ -1,10 +1,6 @@
 /*
-This file acts as the local path planner.
-It is responsible for
-- Subscribing to 'target_position' topic that gets published by target_detector subsystem and also the current drone position
-- Publishing to 'path' topic the type of path (linear, Bezier curve, etc.) and parameters to define it fully
-- Logging current state of smPathPlanner
-- Controlling state progression of PathPlanner subsystem with a local state machine.
+This file acts as the local path planner and 
+generates local waypoints within local cost map.
 */
 
 #include <cstdio>

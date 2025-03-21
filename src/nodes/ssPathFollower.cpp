@@ -1,8 +1,7 @@
 /*
-This file contains PID loop to follow local path plan. It
-- Subscribe to 'path' topic from path_planner and current drone position
-- Compute desired position point for drone (in drone frame)
-- Publish this to topic 'position_desired', which gets accessed by Gazebo's controller
+This file contains a PID loop to follow local path plan, traversing through
+all local waypoints. Whenever a new path plan arrives, it restarts and follows
+the new plan.
 */
 
 
