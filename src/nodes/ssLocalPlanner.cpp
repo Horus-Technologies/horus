@@ -26,11 +26,11 @@ generates local waypoints within local cost map.
 
 using namespace std::chrono_literals;
 
-class ssPathPlanner : public rclcpp::Node
+class ssLocalPlanner : public rclcpp::Node
 {
   public:
-    ssPathPlanner()
-    : Node("ssPathPlanner"), _count(0), _costMap(0.25, {40,40,40}), _start(&_costMap.getVoxels()[0][0][0]), _goal(&_costMap.getVoxels()[25][25][20])
+    ssLocalPlanner()
+    : Node("ssLocalPlanner"), _count(0), _costMap(0.25, {40,40,40}), _start(&_costMap.getVoxels()[0][0][0]), _goal(&_costMap.getVoxels()[25][25][20])
     {
         // Subscribing
         rclcpp::QoS qos(rclcpp::KeepLast(10)); 
@@ -43,7 +43,7 @@ class ssPathPlanner : public rclcpp::Node
         
         // Publishing
         _publisher = this->create_publisher<nav_msgs::msg::Path>("waypoints", 10); // waypoints with stamped pose
-        _timer = this->create_wall_timer(1000ms, std::bind(&ssPathPlanner::callback_path, this));
+        _timer = this->create_wall_timer(1000ms, std::bind(&ssLocalPlanner::callback_path, this));
         _publisher_path_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("path/markers", 10);
         _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
 
@@ -280,7 +280,7 @@ class ssPathPlanner : public rclcpp::Node
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<ssPathPlanner>());
+  rclcpp::spin(std::make_shared<ssLocalPlanner>());
   rclcpp::shutdown();
   return 0;
 }

@@ -47,14 +47,14 @@ include_directories(include)
 
 
 
-# Create Cpp executable for path_planner
-add_executable(path_planner 
-  src/nodes/ssPathPlanner.cpp 
+# Create Cpp executable for local_planner
+add_executable(local_planner 
+  src/nodes/ssLocalPlanner.cpp 
   src/lib/Voxel.cpp
   src/lib/CostMap.cpp
   src/lib/Search.cpp
 )
-ament_target_dependencies(path_planner
+ament_target_dependencies(local_planner
   rclcpp
   std_msgs
   geometry_msgs
@@ -69,11 +69,11 @@ ament_target_dependencies(path_planner
 #   ../../../../../planner_test/include
 # )
 
-# Create Cpp executable for path_follower
-add_executable(path_follower
-  src/nodes/ssPathFollower.cpp
+# Create Cpp executable for trajectory_controller
+add_executable(trajectory_controller
+  src/nodes/ssTrajectoryController.cpp
 )
-ament_target_dependencies(path_follower
+ament_target_dependencies(trajectory_controller
   rclcpp
   std_msgs
   geometry_msgs
@@ -108,8 +108,8 @@ target_include_directories(tests PUBLIC
 
 # Install Cpp executables
 install(TARGETS
-  path_planner
-  path_follower
+  local_planner
+  trajectory_controller
   demoBFS
   tests
   DESTINATION lib/${PROJECT_NAME}

@@ -26,15 +26,15 @@ the new plan.
 
 using namespace std::chrono_literals;
 
-class ssPathFollower : public rclcpp::Node
+class ssTrajectoryController : public rclcpp::Node
 {
   public:
-    ssPathFollower()
-    : Node("PathFollower"), _count(0), _s_offset(0.0), prevDesiredPose(0,0,0), prevCurrentPose(0,0,0)
+    ssTrajectoryController()
+    : Node("ssTrajectoryController"), _count(0), _s_offset(0.0), prevDesiredPose(0,0,0), prevCurrentPose(0,0,0)
     {
         // Subscribing
         _subscriber = this->create_subscription<nav_msgs::msg::Path>(
-            "waypoints",10,std::bind(&ssPathFollower::callback_path,this,std::placeholders::_1));
+            "waypoints",10,std::bind(&ssTrajectoryController::callback_path,this,std::placeholders::_1));
         rclcpp::QoS qos(rclcpp::KeepLast(10)); 
         qos.best_effort();
        _subscriberDrone = this->create_subscription<geometry_msgs::msg::PoseStamped>(
@@ -46,7 +46,7 @@ class ssPathFollower : public rclcpp::Node
         // Publishing
         _publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("/ap/cmd_vel", qos);
         _timer = this->create_wall_timer(
-        10ms, std::bind(&ssPathFollower::callback_command, this));
+        10ms, std::bind(&ssTrajectoryController::callback_command, this));
 
         _publisherDesired = this->create_publisher<geometry_msgs::msg::PoseStamped>("desired_pose",10);
         
@@ -302,7 +302,7 @@ class ssPathFollower : public rclcpp::Node
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<ssPathFollower>());
+  rclcpp::spin(std::make_shared<ssTrajectoryController>());
   rclcpp::shutdown();
   return 0;
 }
