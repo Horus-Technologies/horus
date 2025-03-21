@@ -1,0 +1,85 @@
+[0.014s] Invoking command in '/home/misha/ros2_ws/src/drone_tracker/build/drone_tracker': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/misha/ros2_ws/install/launch_testing_examples:/home/misha/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/misha/ros2_ws/install/examples_rclpy_minimal_service:/home/misha/ros2_ws/install/examples_rclpy_minimal_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_client:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_server:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_client:/home/misha/ros2_ws/install/examples_rclpy_guard_conditions:/home/misha/ros2_ws/install/examples_rclpy_executors:/opt/ros/humble /usr/bin/cmake /home/misha/ros2_ws/src/drone_tracker -DCMAKE_INSTALL_PREFIX=/home/misha/ros2_ws/src/drone_tracker/install/drone_tracker
+[0.070s] -- The C compiler identification is GNU 11.4.0
+[0.134s] -- The CXX compiler identification is GNU 11.4.0
+[0.143s] -- Detecting C compiler ABI info
+[0.265s] -- Detecting C compiler ABI info - done
+[0.281s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.281s] -- Detecting C compile features
+[0.282s] -- Detecting C compile features - done
+[0.288s] -- Detecting CXX compiler ABI info
+[0.385s] -- Detecting CXX compiler ABI info - done
+[0.396s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.396s] -- Detecting CXX compile features
+[0.397s] -- Detecting CXX compile features - done
+[0.403s] -- Found ament_cmake: 1.3.9 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.608s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.720s] -- Found rclcpp: 16.0.9 (/opt/ros/humble/share/rclcpp/cmake)
+[0.776s] -- Found rosidl_generator_c: 3.1.5 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.783s] -- Found rosidl_adapter: 3.1.5 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.794s] -- Found rosidl_generator_cpp: 3.1.5 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.809s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.835s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.942s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[0.947s] -- Found rmw_fastrtps_cpp: 6.2.6 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[1.062s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+[1.092s] -- Found FastRTPS: /opt/ros/humble/include  
+[1.139s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.152s] -- Looking for pthread.h
+[1.216s] -- Looking for pthread.h - found
+[1.217s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[1.288s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[1.289s] -- Found Threads: TRUE  
+[1.469s] -- Found rclpy: 3.3.13 (/opt/ros/humble/share/rclpy/cmake)
+[1.637s] -- Configuring done
+[1.646s] -- Generating done
+[1.648s] -- Build files have been written to: /home/misha/ros2_ws/src/drone_tracker/build/drone_tracker
+[1.656s] Invoked command in '/home/misha/ros2_ws/src/drone_tracker/build/drone_tracker' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/misha/ros2_ws/install/launch_testing_examples:/home/misha/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/misha/ros2_ws/install/examples_rclpy_minimal_service:/home/misha/ros2_ws/install/examples_rclpy_minimal_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_client:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_server:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_client:/home/misha/ros2_ws/install/examples_rclpy_guard_conditions:/home/misha/ros2_ws/install/examples_rclpy_executors:/opt/ros/humble /usr/bin/cmake /home/misha/ros2_ws/src/drone_tracker -DCMAKE_INSTALL_PREFIX=/home/misha/ros2_ws/src/drone_tracker/install/drone_tracker
+[1.658s] Invoking command in '/home/misha/ros2_ws/src/drone_tracker/build/drone_tracker': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/misha/ros2_ws/install/launch_testing_examples:/home/misha/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/misha/ros2_ws/install/examples_rclpy_minimal_service:/home/misha/ros2_ws/install/examples_rclpy_minimal_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_client:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_server:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_client:/home/misha/ros2_ws/install/examples_rclpy_guard_conditions:/home/misha/ros2_ws/install/examples_rclpy_executors:/opt/ros/humble /usr/bin/cmake --build /home/misha/ros2_ws/src/drone_tracker/build/drone_tracker -- -j16 -l16
+[1.709s] [ 50%] [32mBuilding CXX object CMakeFiles/cpp_executable.dir/src/my_cpp_node.cpp.o[0m
+[1.719s] [ 50%] Built target ament_cmake_python_copy_drone_tracker
+[2.012s] running egg_info
+[2.013s] creating drone_tracker.egg-info
+[2.013s] writing drone_tracker.egg-info/PKG-INFO
+[2.013s] writing dependency_links to drone_tracker.egg-info/dependency_links.txt
+[2.013s] writing top-level names to drone_tracker.egg-info/top_level.txt
+[2.013s] writing manifest file 'drone_tracker.egg-info/SOURCES.txt'
+[2.015s] reading manifest file 'drone_tracker.egg-info/SOURCES.txt'
+[2.016s] writing manifest file 'drone_tracker.egg-info/SOURCES.txt'
+[2.040s] [ 50%] Built target ament_cmake_python_build_drone_tracker_egg
+[4.260s] [100%] [32m[1mLinking CXX executable cpp_executable[0m
+[4.361s] [100%] Built target cpp_executable
+[4.371s] Invoked command in '/home/misha/ros2_ws/src/drone_tracker/build/drone_tracker' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/misha/ros2_ws/install/launch_testing_examples:/home/misha/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/misha/ros2_ws/install/examples_rclpy_minimal_service:/home/misha/ros2_ws/install/examples_rclpy_minimal_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_client:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_server:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_client:/home/misha/ros2_ws/install/examples_rclpy_guard_conditions:/home/misha/ros2_ws/install/examples_rclpy_executors:/opt/ros/humble /usr/bin/cmake --build /home/misha/ros2_ws/src/drone_tracker/build/drone_tracker -- -j16 -l16
+[4.413s] Invoking command in '/home/misha/ros2_ws/src/drone_tracker/build/drone_tracker': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/misha/ros2_ws/install/launch_testing_examples:/home/misha/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/misha/ros2_ws/install/examples_rclpy_minimal_service:/home/misha/ros2_ws/install/examples_rclpy_minimal_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_client:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_server:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_client:/home/misha/ros2_ws/install/examples_rclpy_guard_conditions:/home/misha/ros2_ws/install/examples_rclpy_executors:/opt/ros/humble /usr/bin/cmake --install /home/misha/ros2_ws/src/drone_tracker/build/drone_tracker
+[4.423s] -- Install configuration: ""
+[4.423s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/lib/drone_tracker/cpp_executable
+[4.424s] -- Set runtime path of "/home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/lib/drone_tracker/cpp_executable" to ""
+[4.424s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/environment/pythonpath.sh
+[4.425s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/environment/pythonpath.dsv
+[4.425s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/local/lib/python3.10/dist-packages/drone_tracker-0.0.0-py3.10.egg-info
+[4.425s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/local/lib/python3.10/dist-packages/drone_tracker-0.0.0-py3.10.egg-info/PKG-INFO
+[4.425s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/local/lib/python3.10/dist-packages/drone_tracker-0.0.0-py3.10.egg-info/dependency_links.txt
+[4.425s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/local/lib/python3.10/dist-packages/drone_tracker-0.0.0-py3.10.egg-info/SOURCES.txt
+[4.426s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/local/lib/python3.10/dist-packages/drone_tracker-0.0.0-py3.10.egg-info/top_level.txt
+[4.426s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/local/lib/python3.10/dist-packages/drone_tracker
+[4.426s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/local/lib/python3.10/dist-packages/drone_tracker/module_to_import.py
+[4.426s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/local/lib/python3.10/dist-packages/drone_tracker/__init__.py
+[4.478s] Listing '/home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/local/lib/python3.10/dist-packages/drone_tracker'...
+[4.479s] Compiling '/home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/local/lib/python3.10/dist-packages/drone_tracker/__init__.py'...
+[4.479s] Compiling '/home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/local/lib/python3.10/dist-packages/drone_tracker/module_to_import.py'...
+[4.482s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/lib/drone_tracker/my_py_node.py
+[4.483s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/ament_index/resource_index/package_run_dependencies/drone_tracker
+[4.483s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/ament_index/resource_index/parent_prefix_path/drone_tracker
+[4.483s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/environment/ament_prefix_path.sh
+[4.483s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/environment/ament_prefix_path.dsv
+[4.483s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/environment/path.sh
+[4.484s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/environment/path.dsv
+[4.484s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/local_setup.bash
+[4.484s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/local_setup.sh
+[4.484s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/local_setup.zsh
+[4.484s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/local_setup.dsv
+[4.484s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/package.dsv
+[4.485s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/ament_index/resource_index/packages/drone_tracker
+[4.485s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/cmake/drone_trackerConfig.cmake
+[4.485s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/cmake/drone_trackerConfig-version.cmake
+[4.485s] -- Installing: /home/misha/ros2_ws/src/drone_tracker/install/drone_tracker/share/drone_tracker/package.xml
+[4.488s] Invoked command in '/home/misha/ros2_ws/src/drone_tracker/build/drone_tracker' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/misha/ros2_ws/install/launch_testing_examples:/home/misha/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/misha/ros2_ws/install/examples_rclpy_minimal_service:/home/misha/ros2_ws/install/examples_rclpy_minimal_publisher:/home/misha/ros2_ws/install/examples_rclpy_minimal_client:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_server:/home/misha/ros2_ws/install/examples_rclpy_minimal_action_client:/home/misha/ros2_ws/install/examples_rclpy_guard_conditions:/home/misha/ros2_ws/install/examples_rclpy_executors:/opt/ros/humble /usr/bin/cmake --install /home/misha/ros2_ws/src/drone_tracker/build/drone_tracker
