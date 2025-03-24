@@ -45,16 +45,16 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 # Include Cpp "include" directory
 include_directories(include)
 
-
-
-# Create Cpp executable for local_planner
-add_executable(local_planner 
-  src/nodes/ssLocalPlanner.cpp 
+add_executable(fsm 
+  src/nodes/ssFSM.cpp
+  src/nodes/ssGlobalPlanner.cpp
+  src/nodes/ssLocalPlanner.cpp
+  src/nodes/ssTrajectoryController.cpp  
   src/lib/Voxel.cpp
   src/lib/CostMap.cpp
   src/lib/Search.cpp
 )
-ament_target_dependencies(local_planner
+ament_target_dependencies(fsm
   rclcpp
   std_msgs
   geometry_msgs
@@ -63,6 +63,25 @@ ament_target_dependencies(local_planner
   geographic_msgs
   Eigen3
 )
+
+
+# Create Cpp executable for local_planner
+# add_executable(local_planner 
+#   src/nodes/ssLocalPlanner.cpp 
+#   src/lib/Voxel.cpp
+#   src/lib/CostMap.cpp
+#   src/lib/Search.cpp
+# )
+# ament_target_dependencies(local_planner
+#   rclcpp
+#   std_msgs
+#   geometry_msgs
+#   visualization_msgs
+#   nav_msgs
+#   geographic_msgs
+#   Eigen3
+# )
+
 # find_package(planner_test REQUIRED)
 # target_link_libraries(path_planner_exe planner_test)
 # target_include_directories(path_planner_exe PUBLIC
@@ -70,17 +89,17 @@ ament_target_dependencies(local_planner
 # )
 
 # Create Cpp executable for trajectory_controller
-add_executable(trajectory_controller
-  src/nodes/ssTrajectoryController.cpp
-)
-ament_target_dependencies(trajectory_controller
-  rclcpp
-  std_msgs
-  geometry_msgs
-  geographic_msgs
-  Eigen3
-  nav_msgs
-)
+# add_executable(trajectory_controller
+#   src/nodes/ssTrajectoryController.cpp
+# )
+# ament_target_dependencies(trajectory_controller
+#   rclcpp
+#   std_msgs
+#   geometry_msgs
+#   geographic_msgs
+#   Eigen3
+#   nav_msgs
+# )
 
 add_executable(demoBFS
   src/nodes/demoBFS.cpp
@@ -108,8 +127,9 @@ target_include_directories(tests PUBLIC
 
 # Install Cpp executables
 install(TARGETS
-  local_planner
-  trajectory_controller
+  fsm
+  # local_planner
+  # trajectory_controller
   demoBFS
   tests
   DESTINATION lib/${PROJECT_NAME}

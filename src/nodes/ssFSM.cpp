@@ -1,0 +1,19 @@
+#include "ssFSM.hpp"
+
+int main(int argc, char * argv[])
+{
+  CostMap costMap(0.25, {80,60,60});
+
+  rclcpp::init(argc, argv);
+  auto globalPlanner = std::make_shared<ssGlobalPlanner>(&costMap);
+  auto localPlanner = std::make_shared<ssLocalPlanner>(&costMap);
+  auto trajectoryController = std::make_shared<ssTrajectoryController>();
+
+  rclcpp::executors::MultiThreadedExecutor executor;
+  executor.add_node(globalPlanner);
+  executor.add_node(localPlanner);
+  executor.add_node(trajectoryController);
+  executor.spin();
+  rclcpp::shutdown();
+  return 0;
+}

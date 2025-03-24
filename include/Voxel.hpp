@@ -1,3 +1,6 @@
+#ifndef VOXEL_H
+#define VOXEL_H
+
 #include <array>
 #include <cstddef>
 #include <functional>
@@ -29,3 +32,5 @@ private:
     // Cost
     double _cost;
 };
+
+#endif

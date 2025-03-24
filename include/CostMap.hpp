@@ -1,8 +1,13 @@
+#ifndef COST_MAP_H
+#define COST_MAP_H
+
+
 #include "Voxel.hpp"
 #include <vector>
 #include <memory>
 #include <unordered_set>
 #include <iostream>
+
 
 class CostMap
 {
@@ -22,3 +27,5 @@ private:
     const double _scale; // length of each voxel edge
     std::array<int,3> _dimensions;
 };
+
+#endif
