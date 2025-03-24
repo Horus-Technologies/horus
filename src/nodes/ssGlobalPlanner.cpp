@@ -1,0 +1,4 @@
+/*
+Publishes a goal waypoint the drone must go to.
+This node has access to the costMap.
+*/

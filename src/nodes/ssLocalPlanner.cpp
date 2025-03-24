@@ -30,7 +30,7 @@ class ssLocalPlanner : public rclcpp::Node
 {
   public:
     ssLocalPlanner()
-    : Node("ssLocalPlanner"), _count(0), _costMap(0.25, {40,40,40}), _start(&_costMap.getVoxels()[0][0][0]), _goal(&_costMap.getVoxels()[25][25][20])
+    : Node("ssLocalPlanner"), _count(0), _costMap(0.25, {80,60,60}), _start(&_costMap.getVoxels()[0][0][0]), _goal(&_costMap.getVoxels()[79][10][10])
     {
         // Subscribing
         rclcpp::QoS qos(rclcpp::KeepLast(10)); 
@@ -43,7 +43,7 @@ class ssLocalPlanner : public rclcpp::Node
         
         // Publishing
         _publisher = this->create_publisher<nav_msgs::msg::Path>("waypoints", 10); // waypoints with stamped pose
-        _timer = this->create_wall_timer(1000ms, std::bind(&ssLocalPlanner::callback_path, this));
+        _timer = this->create_wall_timer(1000ms, std::bind(&ssLocalPlanner::run, this));
         _publisher_path_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("path/markers", 10);
         _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
 
@@ -51,20 +51,51 @@ class ssLocalPlanner : public rclcpp::Node
         auto duration = now.time_since_epoch();
         auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
 
-        buildCostMap();
+        // Obstacle definition
+        std::vector<std::array<double,3>> xyz_min;
+        std::vector<std::array<double,3>> xyz_max;
+        xyz_min.push_back({3, 3, 0});
+        xyz_max.push_back({4, 5, 10});
+
+        xyz_min.push_back({2, 0, 0});
+        xyz_max.push_back({3, 3, 10});
+
+        xyz_min.push_back({8, 4, 0});
+        xyz_max.push_back({10, 8, 10});
+
+        xyz_min.push_back({15, 0, 0});
+        xyz_max.push_back({16, 4, 10});
+
+        _obstacles[0] = xyz_min;
+        _obstacles[1] = xyz_max;
     }
 
   private:
     // Publisher function for path - on a timer callback
-    void callback_path()
+    void run()
     {
-      RCLCPP_INFO(this->get_logger(), "Finding start position");
+      RCLCPP_INFO(this->get_logger(), "Finding drone start position");
       _start = _costMap.findVoxelByPosition({
         _lastPoseDrone.pose.position.x,
         _lastPoseDrone.pose.position.y,
         _lastPoseDrone.pose.position.z
       });
-      RCLCPP_INFO(this->get_logger(), "Found start position");
+
+      // Check for new obstacles within drone range, and add them
+      for (int i = 0; i < _obstacles[0].size();i++){
+        std::array<double,3> xyz_min = _obstacles[0][i];
+        std::array<double,3> xyz_max = _obstacles[1][i];
+        float distanceToDrone = sqrt(
+          pow(_lastPoseDrone.pose.position.x - (xyz_max[0] + xyz_min[0])/2, 2) +
+          pow(_lastPoseDrone.pose.position.y - (xyz_max[1] + xyz_min[1])/2, 2) +
+          pow(_lastPoseDrone.pose.position.z - (xyz_max[2] + xyz_min[2])/2, 2));
+        RCLCPP_INFO(this->get_logger(), "Distance to Drone from Obstacle%d : %f", i, distanceToDrone);
+        if(distanceToDrone < 5)
+        {
+          _costMap.addObstacle(_obstacles[0][i], _obstacles[1][i]);
+        }
+      }
+
       PathMap came_from = Search::runBreadthFirst(_costMap, _start, _goal);
       VoxelsRef voxels = _costMap.getVoxels();
       // Obtain path
@@ -123,28 +154,6 @@ class ssLocalPlanner : public rclcpp::Node
       _lastPath.header.frame_id = "odom";
       _publisher->publish(_lastPath);
     }
-
-  // Adding all of the necessary obstacles by modifying voxel costs
-  void buildCostMap()
-  {
-    std::vector<std::array<double,3>> xyz_min;
-    std::vector<std::array<double,3>> xyz_max;
-    xyz_min.push_back({3, 3, 0});
-    xyz_max.push_back({4, 5, 12});
-
-    xyz_min.push_back({2, 0, 0});
-    xyz_max.push_back({3, 3, 10});
-
-    xyz_min.push_back({2, 11, 0});
-    xyz_max.push_back({4, 13, 6});
-
-    xyz_min.push_back({8, 0, 0});
-    xyz_max.push_back({30, 10, 5});
-
-    for (int i = 0; i < xyz_min.size();i++){
-      _costMap.addObstacle(xyz_min[i], xyz_max[i]);
-    }
-  }
 
   void visualizePath(std::vector<const Voxel*>& path)
   {
@@ -271,6 +280,7 @@ class ssLocalPlanner : public rclcpp::Node
   geometry_msgs::msg::PoseStamped _lastPoseDrone;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscriber;
 
+  std::array<std::vector<std::array<double,3>>,2> _obstacles;
   CostMap _costMap;
   const Voxel* _start;
   const Voxel* _goal;
