@@ -22,7 +22,7 @@ ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
 
     // Publishing
     _publisher = this->create_publisher<nav_msgs::msg::Path>("waypoints", 10); // waypoints with stamped pose
-    _timer = this->create_wall_timer(1000ms, std::bind(&ssLocalPlanner::run, this));
+    _timer = this->create_wall_timer(500ms, std::bind(&ssLocalPlanner::run, this));
     _publisher_path_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("path/markers", 10);
     _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
 
