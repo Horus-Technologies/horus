@@ -74,7 +74,7 @@ const std::vector<std::vector<std::vector<Voxel>>>& CostMap::getVoxels() const
     return _voxels;
 }
 
-const Voxel* CostMap::getVoxel(std::array<int,3> index) const
+Voxel* CostMap::getVoxel(std::array<int,3> index)
 {
     if (index[0] < 0){index[0] = 0;}
     if (index[1] < 0){index[1] = 0;}
@@ -82,12 +82,16 @@ const Voxel* CostMap::getVoxel(std::array<int,3> index) const
     return &_voxels[index[0]][index[1]][index[2]];
 }
 
-const Voxel* CostMap::findVoxelByPosition(std::array<double,3> position) const
+Voxel* CostMap::findVoxelByPosition(std::array<double,3> position)
 {
     std::array<int,3> index = {
         std::round(position[0]/_scale - 0.5),
         std::round(position[1]/_scale - 0.5),
         std::round(position[2]/_scale - 0.5)};
+    if (index[0] < 0 || index[1] < 0 || index[2] < 0)
+    {
+        throw std::runtime_error("Voxel index found to be less than 0. Check CostMap limits.");
+    }
     return getVoxel(index);
 }
 
@@ -270,4 +274,10 @@ bool CostMap::checkCollision(const Voxel* voxelA, const Voxel* voxelB) const
 
     // std::cout << "End collision check - no collision found!" << std::endl;
     return false;
+}
+
+
+std::array<double,3> CostMap::getDimensionsPosition()
+{
+    return getVoxel({_dimensions[0]-1,_dimensions[1]-1,_dimensions[2]-1})->getPosition();
 }

@@ -5,16 +5,20 @@ Demo node for voxelization of a point cloud.
 #include "CostMap.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <visualization_msgs/msg/marker_array.hpp>
+#include "nav_msgs/msg/odometry.hpp"
+#include "sensor_msgs/msg/point_cloud2.hpp"
+#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 using namespace std::chrono_literals;
 
 class demoVoxelization : public rclcpp::Node
 {
 public:
-demoVoxelization() : Node("demoVoxelization"), _costMap(1, {40,40,40})
-    {
-        
-
+demoVoxelization()
+: Node("demoVoxelization"), _count(0), _costMap(0.1, {100,100,40}), _positionStart({0,0,0})
+    {   
         // Subscribers
         _subscriber_points = this->create_subscription<sensor_msgs::msg::PointCloud2>(
             "/lidar/points", 10,
@@ -29,10 +33,11 @@ demoVoxelization() : Node("demoVoxelization"), _costMap(1, {40,40,40})
 
         // Timer
         _timer = this->create_wall_timer(
-            1000ms, std::bind(&demoVoxelization::run, this));
+            100ms, std::bind(&demoVoxelization::run, this));
 
         // Publishers
         _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
+        _publisher_points = this->create_publisher<sensor_msgs::msg::PointCloud2>("/output_points", 10);
     }
 private:
     void run()
@@ -42,46 +47,73 @@ private:
     }
 
     void callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
-        _points = points;
+        _points = *points;
+        _points.header.frame_id = "map";
     }
 
     void callback_pose(const nav_msgs::msg::Odometry::SharedPtr odom){
-        _pose = *odom.pose.pose;
+        _position[0] = odom->pose.pose.position.x;
+        _position[1] = odom->pose.pose.position.y;
+        _position[2] = odom->pose.pose.position.z;
+
+        _orientation.x() = odom->pose.pose.orientation.x;
+        _orientation.y() = odom->pose.pose.orientation.y;
+        _orientation.z() = odom->pose.pose.orientation.z;
+        _orientation.w() = odom->pose.pose.orientation.w;
+
+        if (!_poseStartSet){
+            _positionStart = _position;
+            _poseStartSet = true;
+        }
+        _position = _position - _positionStart;
     }
 
     void processPoints(){
+        RCLCPP_INFO(this->get_logger(), "Position: %f %f %f",
+        _position[0], _position[1], _position[2]);
+
+        sensor_msgs::PointCloud2Iterator<float> iter_x(_points, "x");
+        sensor_msgs::PointCloud2Iterator<float> iter_y(_points, "y");
+        sensor_msgs::PointCloud2Iterator<float> iter_z(_points, "z");
+
         //loop through all points
+        for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
+            //rotate points so they are aligned with robot orientation
+            Eigen::Matrix3f R = _orientation.toRotationMatrix();
+            Eigen::Vector3f tempPoint(*iter_x, *iter_y, *iter_z);
+            Eigen::Matrix3f R_correction;
+            R_correction = Eigen::AngleAxisf(M_PI/6, Eigen::Vector3f::UnitY());
+            Eigen::Vector3f rotatedPoint = R*R_correction*tempPoint;
+            *iter_x = rotatedPoint[0];
+            *iter_y = rotatedPoint[1];
+            *iter_z = rotatedPoint[2];
 
-            // determine xyz position of point 
+            // offset points so they are aligned with current robot position
+            *iter_x += _position[0];
+            *iter_y += _position[1]+ 3;
+            *iter_z += _position[2]+1;
 
-            // determine which voxel in costmap this point belongs to
+            std::array<double,3> max_position = _costMap.getDimensionsPosition();
 
-            // increase cost by 3 or something of that voxel
+            //ensuring that point is not going to be outside of costmap
+            if (*iter_x > 0 && *iter_x < max_position[0]
+                && *iter_y > 0 && *iter_y < max_position[1]
+                && *iter_z > 0 && *iter_z < max_position[2]){ 
+                // determine which voxel in costmap this point belongs to
+                Voxel* voxel = _costMap.findVoxelByPosition({*iter_x, *iter_y, *iter_z});
+                
+                // increase cost by 3 or something of that voxel
+                voxel->setCost(10);
+            }
+        }
 
-        // Looping through voxels. Might not be needed.
-        // int x_dim = 40;
-        // int y_dim = 40;
-        // int z_dim = 40;
-
-        // for (int i = 0; i < x_dim; ++i)
-        // {
-        //     for (int j = 0; j < y_dim; ++j)
-        //     {
-        //         for (int k = 0; k < z_dim; ++k)
-        //         {
-        //             if()
-        //             double cost = 1;
-        //             std::array<int,3> index = {i,j,k};
-        //             Voxel voxel(index, cost, _scale);
-
-        //             k_vec.push_back(voxel);
-        //         }
-        //     }
-        // }
+        _publisher_points->publish(_points);
     }
 
     void visualizeCostMap()
     {
+        using VoxelsRef = const std::vector<std::vector<std::vector<Voxel>>>&;
+
         VoxelsRef voxels = _costMap.getVoxels();
 
         visualization_msgs::msg::MarkerArray marker_array;
@@ -89,59 +121,66 @@ private:
 
         for (int i = 0; i < voxels.size(); ++i)
         {
-        for (int j = 0; j < voxels[0].size(); ++j)
-        {
-            for (int k = 0; k < voxels[0][0].size(); ++k)
+            for (int j = 0; j < voxels[0].size(); ++j)
             {
-            double cost = voxels[i][j][k].getCost();
-            if (cost >= 2)
-            {
-                visualization_msgs::msg::Marker marker;
-                marker.header.frame_id = "map"; // or your frame id
-                marker.header.stamp = this->get_clock()->now();
-                marker.ns = "test_markers";
-                marker.id = markerId;
-                markerId++;
-                marker.type = visualization_msgs::msg::Marker::CUBE;
-                marker.action = visualization_msgs::msg::Marker::ADD;
+                for (int k = 0; k < voxels[0][0].size(); ++k)
+                {
+                double cost = voxels[i][j][k].getCost();
+                if (cost >= 2)
+                {
+                    visualization_msgs::msg::Marker marker;
+                    marker.header.frame_id = "map"; // or your frame id
+                    marker.header.stamp = this->get_clock()->now();
+                    marker.ns = "test_markers";
+                    marker.id = markerId;
+                    markerId++;
+                    marker.type = visualization_msgs::msg::Marker::CUBE;
+                    marker.action = visualization_msgs::msg::Marker::ADD;
 
-                // Set the pose
-                std::array<double, 3> pos = voxels[i][j][k].getPosition();
-                marker.pose.position.x = pos[0];
-                marker.pose.position.y = pos[1];
-                marker.pose.position.z = pos[2];
-                marker.pose.orientation.x = 0.0;
-                marker.pose.orientation.y = 0.0;
-                marker.pose.orientation.z = 0.0;
-                marker.pose.orientation.w = 1.0;
-                
-                // Set the scale
-                const double scale = _costMap.getScale();
-                marker.scale.x = scale;
-                marker.scale.y = scale;
-                marker.scale.z = scale;
+                    // Set the pose
+                    std::array<double, 3> pos = voxels[i][j][k].getPosition();
+                    marker.pose.position.x = pos[0];
+                    marker.pose.position.y = pos[1];
+                    marker.pose.position.z = pos[2];
+                    marker.pose.orientation.x = 0.0;
+                    marker.pose.orientation.y = 0.0;
+                    marker.pose.orientation.z = 0.0;
+                    marker.pose.orientation.w = 1.0;
+                    
+                    // Set the scale
+                    const double scale = _costMap.getScale();
+                    marker.scale.x = scale;
+                    marker.scale.y = scale;
+                    marker.scale.z = scale;
 
-                // Set the color
-                marker.color.r = (1.0f - (cost * 0.2f)); // Red, decreasing with i
-                marker.color.g = (cost * 0.2f);          // Green, increasing with i
-                marker.color.b = 0.0f;
-                marker.color.a = cost * 0.1f;
+                    // Set the color
+                    marker.color.r = (1.0f - (cost * 0.2f)); // Red, decreasing with i
+                    marker.color.g = (cost * 0.2f);          // Green, increasing with i
+                    marker.color.b = 0.0f;
+                    marker.color.a = cost * 0.1f;
 
-                // Add the marker to the array
-                marker_array.markers.push_back(marker);
-            }
+                    // Add the marker to the array
+                    marker_array.markers.push_back(marker);
+                }
+                }
             }
         }
-        }
-        
         _publisher_map_markers->publish(marker_array);
-
     }
 
+    rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr _subscriber_points;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr _subscriber_pose;
+    rclcpp::TimerBase::SharedPtr _timer;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_map_markers;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr _publisher_points;
+
     CostMap _costMap;
-    sensor_msgs::msg::PointCloud2::SharedPtr _points;
-    geometry_msgs::msg::Pose _pose;
-    geometry_msgs::msg::Pose _poseStart;
+    sensor_msgs::msg::PointCloud2 _points;
+    Eigen::Vector3f _position;
+    Eigen::Vector3f _positionStart;
+    Eigen::Quaternionf _orientation;
+    int _count;
+    bool _poseStartSet = false;
 };
 
 int main(int argc, char *argv[])
