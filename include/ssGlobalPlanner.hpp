@@ -9,8 +9,6 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "nav_msgs/msg/path.hpp"
-#include "geographic_msgs/msg/geo_pose_stamped.hpp"
-#include "geographic_msgs/msg/geo_pose.hpp"
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 

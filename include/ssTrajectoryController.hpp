@@ -18,8 +18,8 @@ the new plan.
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
-#include "geographic_msgs/msg/geo_pose_stamped.hpp"
-#include "geographic_msgs/msg/geo_pose.hpp"
+// #include "geographic_msgs/msg/geo_pose_stamped.hpp"
+// #include "geographic_msgs/msg/geo_pose.hpp"
 #include <geometry_msgs/msg/quaternion.hpp>
 #include "nav_msgs/msg/path.hpp"
 

@@ -12,7 +12,7 @@
 
   <depend>rclcpp</depend>
   <depend>nav_msgs</depend>
-  <depend>geographic_msgs</depend>
+  <depend>sensor_msgs</depend>
   <!-- <depend>rclpy</depend> -->
   <build_depend>drone_tracker_messages</build_depend>
   <exec_depend>drone_tracker_messages</exec_depend>
