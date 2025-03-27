@@ -17,23 +17,25 @@ class demoVoxelization : public rclcpp::Node
 {
 public:
 demoVoxelization()
-: Node("demoVoxelization"), _count(0), _costMap(0.1, {100,100,40}), _positionStart({0,0,0})
+: Node("demoVoxelization"), _count(0), _costMap(0.1, {100,100,40}), _positionStart({0,0,0}), _xOffset(1), _yOffset(0), _zOffset(-0.25)
     {   
         // Subscribers
         _subscriber_points = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-            "/lidar/points", 10,
+            // "/lidar/points", 10, // when doing rosbag
+            "/realsense/points", 10, // from realsense
             [this](const sensor_msgs::msg::PointCloud2::SharedPtr points) {
                 this->callback_points(points);
             });
         _subscriber_pose = this->create_subscription<nav_msgs::msg::Odometry>(
-            "/ground_truth_pose", 10,
+            // "/ground_truth_pose", 10, // when doing rosbag
+            "/odometry", 10, // from ardupilot
             [this](const nav_msgs::msg::Odometry::SharedPtr odom) {
                 this->callback_pose(odom);
             });
 
         // Timer
         _timer = this->create_wall_timer(
-            100ms, std::bind(&demoVoxelization::run, this));
+            500ms, std::bind(&demoVoxelization::run, this));
 
         // Publishers
         _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
@@ -42,13 +44,19 @@ demoVoxelization()
 private:
     void run()
     {
-        processPoints();
-        visualizeCostMap();
+        if (_pointsReceived && _poseStartSet){
+
+            processPoints();
+            visualizeCostMap();
+        }
     }
 
     void callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
         _points = *points;
-        _points.header.frame_id = "map";
+        _points.header.frame_id = "odom";
+        if (!_pointsReceived){
+            _pointsReceived = true;
+        }
     }
 
     void callback_pose(const nav_msgs::msg::Odometry::SharedPtr odom){
@@ -65,7 +73,7 @@ private:
             _positionStart = _position;
             _poseStartSet = true;
         }
-        _position = _position - _positionStart;
+        // _position = _position - _positionStart; // for rosbag
     }
 
     void processPoints(){
@@ -81,17 +89,22 @@ private:
             //rotate points so they are aligned with robot orientation
             Eigen::Matrix3f R = _orientation.toRotationMatrix();
             Eigen::Vector3f tempPoint(*iter_x, *iter_y, *iter_z);
-            Eigen::Matrix3f R_correction;
-            R_correction = Eigen::AngleAxisf(M_PI/6, Eigen::Vector3f::UnitY());
-            Eigen::Vector3f rotatedPoint = R*R_correction*tempPoint;
+            // Eigen::Matrix3f R_correction;
+            // R_correction = Eigen::AngleAxisf(M_PI/6, Eigen::Vector3f::UnitY());
+            // Eigen::Vector3f rotatedPoint = R*R_correction*tempPoint; // for rosbag
+            Eigen::Vector3f rotatedPoint = R*tempPoint;
             *iter_x = rotatedPoint[0];
             *iter_y = rotatedPoint[1];
             *iter_z = rotatedPoint[2];
 
             // offset points so they are aligned with current robot position
-            *iter_x += _position[0];
-            *iter_y += _position[1]+ 3;
-            *iter_z += _position[2]+1;
+            *iter_x += _position[0] + _xOffset;
+            //for rosbag
+            // *iter_y += _position[1]+3;
+            // *iter_z += _position[2]+1;
+            // for realsense
+            *iter_y += _position[1] + _yOffset;
+            *iter_z += _position[2] + _zOffset;
 
             std::array<double,3> max_position = _costMap.getDimensionsPosition();
 
@@ -129,7 +142,7 @@ private:
                 if (cost >= 2)
                 {
                     visualization_msgs::msg::Marker marker;
-                    marker.header.frame_id = "map"; // or your frame id
+                    marker.header.frame_id = "odom"; // or your frame id
                     marker.header.stamp = this->get_clock()->now();
                     marker.ns = "test_markers";
                     marker.id = markerId;
@@ -139,9 +152,9 @@ private:
 
                     // Set the pose
                     std::array<double, 3> pos = voxels[i][j][k].getPosition();
-                    marker.pose.position.x = pos[0];
-                    marker.pose.position.y = pos[1];
-                    marker.pose.position.z = pos[2];
+                    marker.pose.position.x = pos[0] - _xOffset;
+                    marker.pose.position.y = pos[1] - _yOffset;
+                    marker.pose.position.z = pos[2] - _zOffset;
                     marker.pose.orientation.x = 0.0;
                     marker.pose.orientation.y = 0.0;
                     marker.pose.orientation.z = 0.0;
@@ -154,10 +167,10 @@ private:
                     marker.scale.z = scale;
 
                     // Set the color
-                    marker.color.r = (1.0f - (cost * 0.2f)); // Red, decreasing with i
-                    marker.color.g = (cost * 0.2f);          // Green, increasing with i
+                    marker.color.r = 1.0f;
+                    marker.color.g = 0.0f;       
                     marker.color.b = 0.0f;
-                    marker.color.a = cost * 0.1f;
+                    marker.color.a = 0.5f;
 
                     // Add the marker to the array
                     marker_array.markers.push_back(marker);
@@ -181,6 +194,10 @@ private:
     Eigen::Quaternionf _orientation;
     int _count;
     bool _poseStartSet = false;
+    bool _pointsReceived = false;
+    float _xOffset;
+    float _yOffset;
+    float _zOffset; // mainly so that floor doesn't get filled up with voxels
 };
 
 int main(int argc, char *argv[])

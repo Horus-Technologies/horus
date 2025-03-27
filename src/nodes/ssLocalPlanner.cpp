@@ -64,19 +64,19 @@ void ssLocalPlanner::run()
   , _start->getIndex()[2]);
 
   // Check for new obstacles within drone range, and add them
-  for (int i = 0; i < _obstacles[0].size();i++){
-    std::array<double,3> xyz_min = _obstacles[0][i];
-    std::array<double,3> xyz_max = _obstacles[1][i];
-    float distanceToDrone = sqrt(
-      pow(_lastPoseDrone.pose.position.x - (xyz_max[0] + xyz_min[0])/2, 2) +
-      pow(_lastPoseDrone.pose.position.y - (xyz_max[1] + xyz_min[1])/2, 2) +
-      pow(_lastPoseDrone.pose.position.z - (xyz_max[2] + xyz_min[2])/2, 2));
-    RCLCPP_INFO(this->get_logger(), "Distance to Drone from Obstacle%d : %f", i, distanceToDrone);
-    if(distanceToDrone < 5)
-    {
-      _costMap->addObstacle(_obstacles[0][i], _obstacles[1][i]);
-    }
-  }
+  // for (int i = 0; i < _obstacles[0].size();i++){
+  //   std::array<double,3> xyz_min = _obstacles[0][i];
+  //   std::array<double,3> xyz_max = _obstacles[1][i];
+  //   float distanceToDrone = sqrt(
+  //     pow(_lastPoseDrone.pose.position.x - (xyz_max[0] + xyz_min[0])/2, 2) +
+  //     pow(_lastPoseDrone.pose.position.y - (xyz_max[1] + xyz_min[1])/2, 2) +
+  //     pow(_lastPoseDrone.pose.position.z - (xyz_max[2] + xyz_min[2])/2, 2));
+  //   RCLCPP_INFO(this->get_logger(), "Distance to Drone from Obstacle%d : %f", i, distanceToDrone);
+  //   if(distanceToDrone < 5)
+  //   {
+  //     _costMap->addObstacle(_obstacles[0][i], _obstacles[1][i]);
+  //   }
+  // }
 
   PathMap came_from = Search::runBreadthFirst(*_costMap, _start, _goal);
   VoxelsRef voxels = _costMap->getVoxels();
@@ -179,58 +179,58 @@ void ssLocalPlanner::visualizePath(std::vector<const Voxel*>& path)
 
 void ssLocalPlanner::visualizeCostMap()
 {
-  VoxelsRef voxels = _costMap->getVoxels();
+  // VoxelsRef voxels = _costMap->getVoxels();
 
-  visualization_msgs::msg::MarkerArray marker_array;
-  int markerId = 0;
+  // visualization_msgs::msg::MarkerArray marker_array;
+  // int markerId = 0;
 
-  for (int i = 0; i < voxels.size(); ++i)
-  {
-    for (int j = 0; j < voxels[0].size(); ++j)
-    {
-      for (int k = 0; k < voxels[0][0].size(); ++k)
-      {
-        double cost = voxels[i][j][k].getCost();
-        if (cost >= 2)
-        {
-          visualization_msgs::msg::Marker marker;
-          marker.header.frame_id = "odom"; // or your frame id
-          marker.header.stamp = this->get_clock()->now();
-          marker.ns = "test_markers";
-          marker.id = markerId;
-          markerId++;
-          marker.type = visualization_msgs::msg::Marker::CUBE;
-          marker.action = visualization_msgs::msg::Marker::ADD;
+  // for (int i = 0; i < voxels.size(); ++i)
+  // {
+  //   for (int j = 0; j < voxels[0].size(); ++j)
+  //   {
+  //     for (int k = 0; k < voxels[0][0].size(); ++k)
+  //     {
+  //       double cost = voxels[i][j][k].getCost();
+  //       if (cost >= 2)
+  //       {
+  //         visualization_msgs::msg::Marker marker;
+  //         marker.header.frame_id = "odom"; // or your frame id
+  //         marker.header.stamp = this->get_clock()->now();
+  //         marker.ns = "test_markers";
+  //         marker.id = markerId;
+  //         markerId++;
+  //         marker.type = visualization_msgs::msg::Marker::CUBE;
+  //         marker.action = visualization_msgs::msg::Marker::ADD;
 
-          // Set the pose
-          std::array<double, 3> pos = voxels[i][j][k].getPosition();
-          marker.pose.position.x = pos[0];
-          marker.pose.position.y = pos[1];
-          marker.pose.position.z = pos[2];
-          marker.pose.orientation.x = 0.0;
-          marker.pose.orientation.y = 0.0;
-          marker.pose.orientation.z = 0.0;
-          marker.pose.orientation.w = 1.0;
+  //         // Set the pose
+  //         std::array<double, 3> pos = voxels[i][j][k].getPosition();
+  //         marker.pose.position.x = pos[0];
+  //         marker.pose.position.y = pos[1];
+  //         marker.pose.position.z = pos[2];
+  //         marker.pose.orientation.x = 0.0;
+  //         marker.pose.orientation.y = 0.0;
+  //         marker.pose.orientation.z = 0.0;
+  //         marker.pose.orientation.w = 1.0;
           
-          // Set the scale
-          const double scale = _costMap->getScale();
-          marker.scale.x = scale;
-          marker.scale.y = scale;
-          marker.scale.z = scale;
+  //         // Set the scale
+  //         const double scale = _costMap->getScale();
+  //         marker.scale.x = scale;
+  //         marker.scale.y = scale;
+  //         marker.scale.z = scale;
 
-          // Set the color
-          marker.color.r = 1.0f; // Red, decreasing with i
-          marker.color.g = 0.0f;          // Green, increasing with i
-          marker.color.b = 0.0f;
-          marker.color.a = 0.9f;
+  //         // Set the color
+  //         marker.color.r = 1.0f; // Red, decreasing with i
+  //         marker.color.g = 0.0f;          // Green, increasing with i
+  //         marker.color.b = 0.0f;
+  //         marker.color.a = 0.9f;
 
-          // Add the marker to the array
-          marker_array.markers.push_back(marker);
-        }
-      }
-    }
-  }
-  _publisher_map_markers->publish(marker_array);
+  //         // Add the marker to the array
+  //         marker_array.markers.push_back(marker);
+  //       }
+  //     }
+  //   }
+  // }
+  // _publisher_map_markers->publish(marker_array);
 }
 
 void ssLocalPlanner::callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp)

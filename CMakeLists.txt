@@ -50,6 +50,7 @@ add_executable(fsm
   src/nodes/ssGlobalPlanner.cpp
   src/nodes/ssLocalPlanner.cpp
   src/nodes/ssTrajectoryController.cpp  
+  src/nodes/ssMapper.cpp  
   src/lib/Voxel.cpp
   src/lib/CostMap.cpp
   src/lib/Search.cpp
