@@ -6,187 +6,122 @@
 #include <thread>
 
 
-CostMap::CostMap()
-    : _scale(1)
+CostMap::CostMap() : _scale(1.0), _voxels(){}
+
+CostMap::CostMap(double scale) : _scale(scale), _voxels(){}
+
+// flatten 3D grid
+int flatten(std::array<int,3> indices)
 {
-
-    int x_dim = 10;
-    int y_dim = 10;
-    int z_dim = 10;
-    
-    std::vector<std::vector<std::vector<Voxel>>> i_vec;
-    for (int i = 0; i < x_dim; ++i)
-    {
-        std::vector<std::vector<Voxel>> j_vec;
-        for (int j = 0; j < y_dim; ++j)
-        {
-            std::vector<Voxel> k_vec;
-            for (int k = 0; k < z_dim; ++k)
-            {
-                
-                double cost = 1;
-                std::array<int,3> index = {i,j,k};
-                Voxel voxel(index, cost, _scale);
-
-                k_vec.push_back(voxel);
-            }
-            j_vec.push_back(k_vec);
-        }
-        i_vec.push_back(j_vec);
-    }
-
-    _voxels = i_vec;
+    return indices[0] + 64*indices[1] + 64*64*indices[2];
 }
 
-CostMap::CostMap(double scale, std::array<int,3> dims)
-    : _scale(scale), _dimensions(dims)
+// unflatten 3D grid
+std::array<int,3> indices unflatten(int i)
 {
-    int x_dim = _dimensions[0];
-    int y_dim = _dimensions[1];
-    int z_dim = _dimensions[2];
-
-    std::vector<std::vector<std::vector<Voxel>>> i_vec;
-    for (int i = 0; i < x_dim; ++i)
-    {
-        std::vector<std::vector<Voxel>> j_vec;
-        for (int j = 0; j < y_dim; ++j)
-        {
-            std::vector<Voxel> k_vec;
-            for (int k = 0; k < z_dim; ++k)
-            {
-                
-                double cost = 1;
-                std::array<int,3> index = {i,j,k};
-                Voxel voxel(index, cost, _scale);
-
-                k_vec.push_back(voxel);
-            }
-            j_vec.push_back(k_vec);
-        }
-        i_vec.push_back(j_vec);
-    }
-
-    _voxels = i_vec;
+    return {i % 64, (i / 64) % 64, i / 64*64}; 
 }
 
-const std::vector<std::vector<std::vector<Voxel>>>& CostMap::getVoxels() const
+VoxelState CostMap::getVoxelStateByIndices(std::array<int,3> indices)
 {
-    return _voxels;
+    return _voxels[flatten(indices)];
 }
 
-Voxel* CostMap::getVoxel(std::array<int,3> index)
+std::array<float,3> CostMap::getVoxelPosition(std::array<int,3> indices)
 {
-    if (index[0] < 0){index[0] = 0;}
-    if (index[1] < 0){index[1] = 0;}
-    if (index[2] < 0){index[2] = 0;}
-    return &_voxels[index[0]][index[1]][index[2]];
+    return {(indices[0]+0.5)*_scale,(indices[1]+0.5)*_scale,(indices[2]+0.5)*_scale};
 }
 
-Voxel* CostMap::findVoxelByPosition(std::array<double,3> position)
+void CostMap::setVoxelStateByIndices(std::array<int,3> indices, VoxelState state)
 {
-    std::array<int,3> index = {
+    _voxels[flatten(indices)] = state;
+}
+
+void CostMap::setVoxelStateByPosition(std::array<float,3> position, VoxelState state)
+{
+    std::array<int,3> indices = {
         std::round(position[0]/_scale - 0.5),
         std::round(position[1]/_scale - 0.5),
         std::round(position[2]/_scale - 0.5)};
-    if (index[0] < 0 || index[1] < 0 || index[2] < 0)
+    if (indices[0] < 0 || indices[1] < 0 || indices[2] < 0)
     {
         throw std::runtime_error("Voxel index found to be less than 0. Check CostMap limits.");
     }
-    return getVoxel(index);
+    setVoxelStateByIndices(indices, state);
 }
 
-/*
-inputs: xyz_min, xyz_max
+std::array<float,3> CostMap::getMaxPosition()
+{
+    return getVoxelPosition({64,64,64});
+}
 
-This function uses the inputs to define the position and size of the obstacle.
-It then proceeds to modify the cost of all voxels that intersect with this obstacle
-and sets them to 100, or some high value.
-
-The resolution of the grid initially will affect how the obstacles appear, but this
-setup will be conservative and will consider a Voxel occupied (high cost) if it crosses
-the obstacle at all.
-*/
-void CostMap::addObstacle(std::array<double,3> xyz_min, std::array<double,3> xyz_max)
+void CostMap::addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_max)
 {   
     // compute xyz limits for obstacle that align with grid
-    std::array<double,3> xyz_min_aligned;
-    std::array<double,3> xyz_max_aligned;
+    std::array<float,3> xyz_min_aligned;
+    std::array<float,3> xyz_max_aligned;
     for (int i=0; i < 3; i++)
     {
         xyz_min_aligned[i] = std::floor(xyz_min[i]/_scale) * _scale;
         xyz_max_aligned[i] = std::ceil(xyz_max[i]/_scale) * _scale;
     }
 
-    int x_dim = _dimensions[0];
-    int y_dim = _dimensions[1];
-    int z_dim = _dimensions[2];
-
-    // iterate through all voxels in the grid
-    for (int i = 0; i < x_dim; ++i)
+    for (int j=0; j<_N; j++)
     {
-        for (int j = 0; j < y_dim; ++j)
+        // get XYZ indices from flat array
+        std::array<int,3> indices = unflatten(j);
+        // get XYZ position from indices
+        std::array<float,3> pos = {(indices[0]+0.5)*_scale,(indices[1]+0.5)*_scale,(indices[2]+0.5)*_scale};
+
+        // adjust VoxelState if needed
+        if (pos[0] >= xyz_min_aligned[0] && pos[0] <= xyz_max_aligned[0] &&
+            pos[1] >= xyz_min_aligned[1] && pos[1] <= xyz_max_aligned[1] &&
+            pos[2] >= xyz_min_aligned[2] && pos[2] <= xyz_max_aligned[2])
         {
-            for (int k = 0; k < z_dim; ++k)
-            {
-                std::array<double,3> pos = _voxels[i][j][k].getPosition();
-                
-                // check if the voxel crosses the obstacle
-                if (pos[0] >= xyz_min_aligned[0] && pos[0] <= xyz_max_aligned[0] &&
-                    pos[1] >= xyz_min_aligned[1] && pos[1] <= xyz_max_aligned[1] &&
-                    pos[2] >= xyz_min_aligned[2] && pos[2] <= xyz_max_aligned[2])
-                {
-                    _voxels[i][j][k].setCost(12);
-                }
-            }
+            setVoxelStateByIndices(indices, VoxelState::OCCUPIED);
         }
     }
 }
 
-const std::vector<const Voxel*> CostMap::neighbors(const Voxel* voxel) const
+const std::vector<std::array<int,3>> CostMap::emptyNeighbors(std::array<int,3> indices) const
 {
-    std::vector<const Voxel*> neighbors;
-    std::array<int,3> index = voxel->getIndex();
+    int index_flat = indices[0] + 64*indices[1] + 64*64*indices[2];
+    std::vector<std::array<int,3>> neighbors;
 
-    int x_dim = _dimensions[0];
-    int y_dim = _dimensions[1];
-    int z_dim = _dimensions[2];
-
-    if (index[0] < x_dim-1)
+    if (indices[0] < 64-1) // x axis +
     {
-        const Voxel* next = &(_voxels[index[0]+1][index[1]][index[2]]);
-        if (next->getCost() < 10){
-            neighbors.push_back(next);
+        if (_voxels[index_flat + 1] == VoxelState::EMPTY){
+            neighbors.push_back(unflatten(index_flat + 1));
         }
     }
-    if (index[0] > 0)
+    if (index[0] > 0) // x axis -
     {
-        const Voxel* next = &(_voxels[index[0]-1][index[1]][index[2]]);
-        if (next->getCost() < 10){
-            neighbors.push_back(next);
+        if (_voxels[index_flat - 1] == VoxelState::EMPTY){
+            neighbors.push_back(unflatten(index_flat - 1));
         }
     }
-    if (index[1] < y_dim-1)
+    if (index[1] < 64-1) // y axis +
     {
         const Voxel* next = &(_voxels[index[0]][index[1]+1][index[2]]);
         if (next->getCost() < 10){
             neighbors.push_back(next);
         }
     }
-    if (index[1] > 0)
+    if (index[1] > 0) // y axis -
     {
         const Voxel* next = &(_voxels[index[0]][index[1]-1][index[2]]);
         if (next->getCost() < 10){
             neighbors.push_back(next);
         }
     }
-    if (index[2] < z_dim-1)
+    if (index[2] < 64-1) // z axis +
     {
         const Voxel* next = &(_voxels[index[0]][index[1]][index[2]+1]);
         if (next->getCost() < 10){
             neighbors.push_back(next);
         }
     }
-    if (index[2] > 0)
+    if (index[2] > 0) // z axis -
     {
         const Voxel* next = &(_voxels[index[0]][index[1]][index[2]-1]);
         if (next->getCost() < 10){
@@ -277,7 +212,7 @@ bool CostMap::checkCollision(const Voxel* voxelA, const Voxel* voxelB) const
 }
 
 
-std::array<double,3> CostMap::getDimensionsPosition()
+std::array<float,3> CostMap::getMaxPosition()
 {
     return getVoxel({_dimensions[0]-1,_dimensions[1]-1,_dimensions[2]-1})->getPosition();
 }

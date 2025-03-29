@@ -17,7 +17,7 @@ class demoVoxelization : public rclcpp::Node
 {
 public:
 demoVoxelization()
-: Node("demoVoxelization"), _count(0), _costMap(0.1, {100,100,40}), _positionStart({0,0,0}), _xOffset(1), _yOffset(0), _zOffset(-0.25)
+: Node("demoVoxelization"), _count(0), _costMap(0.5, {50,50,20}), _positionStart({0,0,0}), _xOffset(2), _yOffset(0), _zOffset(-0.25)
     {   
         // Subscribers
         _subscriber_points = this->create_subscription<sensor_msgs::msg::PointCloud2>(
