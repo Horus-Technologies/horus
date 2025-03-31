@@ -3,23 +3,29 @@
 using namespace std::chrono_literals;
 
 ssMapper::ssMapper(CostMap* costMap)
-: Node("ssMapper"), _count(0), _costMap(costMap), _positionStart({0,0,0}), _xOffset(1), _yOffset(0), _zOffset(-0.25)
+: Node("ssMapper"), _count(0), _costMap(costMap), _positionStart({0,0,0}), _xOffset(3), _yOffset(0), _zOffset(-0.25)
 {   
+    // // Callback group
+    auto exclusive_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    rclcpp::SubscriptionOptions options;
+    options.callback_group = exclusive_group;
+
     // Subscribers
     _subscriber_points = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "/realsense/points", 10, // from realsense
         [this](const sensor_msgs::msg::PointCloud2::SharedPtr points) {
             this->callback_points(points);
-        });
+        },options);
+
     _subscriber_pose = this->create_subscription<nav_msgs::msg::Odometry>(
         "/odometry", 10, // from ardupilot
         [this](const nav_msgs::msg::Odometry::SharedPtr odom) {
             this->callback_pose(odom);
-        });
+        },options);
 
     // Timer
     _timer = this->create_wall_timer(
-        500ms, std::bind(&ssMapper::run, this));
+        200ms, std::bind(&ssMapper::run, this));
 
     // Publishers
     _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
@@ -34,6 +40,7 @@ void ssMapper::run()
 }
 
 void ssMapper::callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
+    std::lock_guard<std::mutex> lock(_points_mutex);
     _points = *points;
     _points.header.frame_id = "odom";
     if (!_pointsReceived){
@@ -60,7 +67,7 @@ void ssMapper::callback_pose(const nav_msgs::msg::Odometry::SharedPtr odom){
 
 void ssMapper::processPoints(){
     auto startTimer = std::chrono::high_resolution_clock::now();
-
+    std::lock_guard<std::mutex> lock(_points_mutex);
     sensor_msgs::PointCloud2Iterator<float> iter_x(_points, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(_points, "y");
     sensor_msgs::PointCloud2Iterator<float> iter_z(_points, "z");
@@ -90,6 +97,9 @@ void ssMapper::processPoints(){
             _costMap->setVoxelStateByPosition({*iter_x, *iter_y, *iter_z}, VoxelState::OCCUPIED);
         }
     }
+    // attempt to clear data to remove stray voxels
+    _points.data.clear();
+
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
     RCLCPP_INFO(this->get_logger(),"Points processed in %f sec",duration.count());

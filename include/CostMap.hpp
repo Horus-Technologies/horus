@@ -7,6 +7,7 @@
 #include <memory>
 #include <unordered_set>
 #include <iostream>
+#include <mutex>
 
 enum VoxelState
 {
@@ -39,6 +40,7 @@ private:
     static constexpr int _N = _res*_res*_res;
     const float _scale; // length of each voxel edge
     std::array<VoxelState, _N> _voxels;
+    std::mutex map_mutex;
 };
 
 #endif

@@ -36,6 +36,7 @@ std::array<float,3> CostMap::getVoxelPosition(std::array<int,3> indices) const
 
 void CostMap::setVoxelStateByIndices(std::array<int,3> indices, VoxelState state)
 {
+    std::lock_guard<std::mutex> lock(map_mutex);
     _voxels[flatten(indices)] = state;
 }
 
@@ -45,10 +46,10 @@ void CostMap::setVoxelStateByPosition(std::array<float,3> position, VoxelState s
         std::round(position[0]/_scale - 0.5),
         std::round(position[1]/_scale - 0.5),
         std::round(position[2]/_scale - 0.5)};
-    if (indices[0] < 0 || indices[1] < 0 || indices[2] < 0)
-    {
-        throw std::runtime_error("Voxel index found to be less than 0. Check CostMap limits.");
-    }
+    // if (indices[0] < 0 || indices[1] < 0 || indices[2] < 0)
+    // {
+    //     throw std::runtime_error("Voxel index found to be less than 0. Check CostMap limits.");
+    // }
     setVoxelStateByIndices(indices, state);
 }
 

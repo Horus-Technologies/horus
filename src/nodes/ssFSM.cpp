@@ -2,7 +2,7 @@
 
 int main(int argc, char * argv[])
 {
-  CostMap costMap(0.25);
+  CostMap costMap(0.1);
 
   rclcpp::init(argc, argv);
   auto mapper = std::make_shared<ssMapper>(&costMap);

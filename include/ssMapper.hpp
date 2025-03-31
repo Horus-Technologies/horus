@@ -44,6 +44,7 @@ class ssMapper : public rclcpp::Node
         float _xOffset;
         float _yOffset;
         float _zOffset; // mainly so that floor doesn't get filled up with voxels
+        std::mutex _points_mutex;
 };
 
 #endif // MAPPER_H
