@@ -32,7 +32,6 @@ class ssMapper : public rclcpp::Node
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr _subscriber_pose;
         rclcpp::TimerBase::SharedPtr _timer;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_map_markers;
-        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr _publisher_points;
 
         CostMap* _costMap;
         sensor_msgs::msg::PointCloud2 _points;
