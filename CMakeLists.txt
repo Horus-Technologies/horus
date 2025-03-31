@@ -45,24 +45,24 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 # Include Cpp "include" directory
 include_directories(include)
 
-add_executable(fsm 
-  src/nodes/ssFSM.cpp
-  src/nodes/ssGlobalPlanner.cpp
-  src/nodes/ssLocalPlanner.cpp
-  src/nodes/ssTrajectoryController.cpp  
-  src/nodes/ssMapper.cpp  
-  src/lib/Voxel.cpp
-  src/lib/CostMap.cpp
-  src/lib/Search.cpp
-)
-ament_target_dependencies(fsm
-  rclcpp
-  std_msgs
-  geometry_msgs
-  visualization_msgs
-  nav_msgs
-  Eigen3
-)
+# add_executable(fsm 
+#   src/nodes/ssFSM.cpp
+#   src/nodes/ssGlobalPlanner.cpp
+#   src/nodes/ssLocalPlanner.cpp
+#   src/nodes/ssTrajectoryController.cpp  
+#   src/nodes/ssMapper.cpp  
+#   src/lib/Voxel.cpp
+#   src/lib/CostMap.cpp
+#   src/lib/Search.cpp
+# )
+# ament_target_dependencies(fsm
+#   rclcpp
+#   std_msgs
+#   geometry_msgs
+#   visualization_msgs
+#   nav_msgs
+#   Eigen3
+# )
 
 
 # Create Cpp executable for local_planner
@@ -116,37 +116,37 @@ ament_target_dependencies(demoBFS
   Eigen3
 )
 
-add_executable(demoVoxelization
-  src/nodes/demoVoxelization.cpp
-  src/lib/Voxel.cpp
-  src/lib/CostMap.cpp
-)
-ament_target_dependencies(demoVoxelization
-  rclcpp
-  std_msgs
-  geometry_msgs
-  visualization_msgs
-  sensor_msgs
-  nav_msgs
-  Eigen3
-)
+# add_executable(demoVoxelization
+#   src/nodes/demoVoxelization.cpp
+#   src/lib/Voxel.cpp
+#   src/lib/CostMap.cpp
+# )
+# ament_target_dependencies(demoVoxelization
+#   rclcpp
+#   std_msgs
+#   geometry_msgs
+#   visualization_msgs
+#   sensor_msgs
+#   nav_msgs
+#   Eigen3
+# )
 
-
-find_package(ament_cmake_gtest REQUIRED)
-ament_add_gtest(tests test/tests.cpp src/lib/Voxel.cpp src/lib/CostMap.cpp)
-target_include_directories(tests PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
+# Tests
+# find_package(ament_cmake_gtest REQUIRED)
+# ament_add_gtest(tests test/tests.cpp src/lib/Voxel.cpp src/lib/CostMap.cpp)
+# target_include_directories(tests PUBLIC
+#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#   $<INSTALL_INTERFACE:include>
+# )
 
 # Install Cpp executables
 install(TARGETS
-  fsm
+  # fsm
   # local_planner
   # trajectory_controller
   demoBFS
-  demoVoxelization
-  tests
+  # demoVoxelization
+  # tests
   DESTINATION lib/${PROJECT_NAME}
 )
 

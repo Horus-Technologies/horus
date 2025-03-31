@@ -11,7 +11,7 @@ using namespace std::chrono_literals;
 class demoBFS : public rclcpp::Node
 {
 public:
-    demoBFS() : Node("demoBFS"), _costMap(1, {40,40,40}), _start(&_costMap.getVoxels()[0][5][0]), _goal(&_costMap.getVoxels()[35][10][0])
+    demoBFS() : Node("demoBFS"), _costMap(1), _start({0,5,0}), _goal({55,99,0})
     {
         // Timer
         _timer = this->create_wall_timer(
@@ -27,28 +27,29 @@ private:
     void run()
     {
         PathMap came_from = Search::runBreadthFirst(_costMap, _start, _goal);
-        VoxelsRef voxels = _costMap.getVoxels();
+    
         // Obtain path
-        const Voxel* current = _goal;
-        std::vector<const Voxel*> path;
+        std::array<int,3> current = _goal;
+        std::vector<std::array<int,3>> path;
         while(current != _start)
         {
-            path.push_back(current);
-            const Voxel* prev = came_from[current];
-            current = prev;
+          path.push_back(current);
+          std::array<int,3> prev = came_from[current];
+          // RCLCPP_INFO(this->get_logger(), "prev: %d %d %d", prev[0],prev[1],prev[2]);
+          current = prev;
         }
         path.push_back(_start); // append start voxel
         
         std::reverse(path.begin(),path.end()); // start --> goal
-        Search::cleanPath(_costMap, path);
+        // Search::cleanPath(_costMap, path);
         visualizePath(path);
         visualizeCostMap();
     }
 
     void buildCostMap()
     {
-        std::vector<std::array<double,3>> xyz_min;
-        std::vector<std::array<double,3>> xyz_max;
+        std::vector<std::array<float,3>> xyz_min;
+        std::vector<std::array<float,3>> xyz_max;
         xyz_min.push_back({3, 3, 0});
         xyz_max.push_back({4, 5, 3});
 
@@ -65,11 +66,11 @@ private:
         _costMap.addObstacle(xyz_min[i], xyz_max[i]);
         }
     }
-    void visualizePath(std::vector<const Voxel*>& path)
+    void visualizePath(std::vector<std::array<int,3>>& path)
   {
     visualization_msgs::msg::MarkerArray path_markers;
     int markerId = 0;
-    for (const Voxel* voxel : path)
+    for (std::array<int,3> indices : path)
     {
       visualization_msgs::msg::Marker marker;
       marker.header.frame_id = "map";
@@ -81,7 +82,7 @@ private:
       marker.action = visualization_msgs::msg::Marker::ADD;
 
       // Set the pose
-      std::array<double, 3> pos = voxel->getPosition();
+      std::array<float, 3> pos = _costMap.getVoxelPosition(indices);
       marker.pose.position.x = pos[0];
       marker.pose.position.y = pos[1];
       marker.pose.position.z = pos[2];
@@ -110,19 +111,17 @@ private:
 
   void visualizeCostMap()
   {
-    VoxelsRef voxels = _costMap.getVoxels();
-
     visualization_msgs::msg::MarkerArray marker_array;
     int markerId = 0;
 
-    for (int i = 0; i < voxels.size(); ++i)
+    for (int i = 0; i < _costMap.getDims()[0]; ++i)
     {
-      for (int j = 0; j < voxels[0].size(); ++j)
+      for (int j = 0; j < _costMap.getDims()[1]; ++j)
       {
-        for (int k = 0; k < voxels[0][0].size(); ++k)
+        for (int k = 0; k < _costMap.getDims()[2]; ++k)
         {
-          double cost = voxels[i][j][k].getCost();
-          if (cost >= 2)
+          VoxelState state = _costMap.getVoxelStateByIndices({i,j,k});
+          if (state == VoxelState::OCCUPIED)
           {
             visualization_msgs::msg::Marker marker;
             marker.header.frame_id = "map"; // or your frame id
@@ -134,7 +133,7 @@ private:
             marker.action = visualization_msgs::msg::Marker::ADD;
 
             // Set the pose
-            std::array<double, 3> pos = voxels[i][j][k].getPosition();
+            std::array<float, 3> pos = _costMap.getVoxelPosition({i,j,k});
             marker.pose.position.x = pos[0];
             marker.pose.position.y = pos[1];
             marker.pose.position.z = pos[2];
@@ -150,10 +149,10 @@ private:
             marker.scale.z = scale;
 
             // Set the color
-            marker.color.r = (1.0f - (cost * 0.2f)); // Red, decreasing with i
-            marker.color.g = (cost * 0.2f);          // Green, increasing with i
+            marker.color.r = 1.0f;
+            marker.color.g = 0.0f;       
             marker.color.b = 0.0f;
-            marker.color.a = cost * 0.1f;
+            marker.color.a = 0.5f;
 
             // Add the marker to the array
             marker_array.markers.push_back(marker);
@@ -171,8 +170,8 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_map_markers;
 
   CostMap _costMap;
-  const Voxel* _start;
-  const Voxel* _goal;
+  std::array<int,3> _start;
+  std::array<int,3> _goal;
 };
 
 int main(int argc, char *argv[])

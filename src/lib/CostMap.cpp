@@ -8,26 +8,28 @@
 
 CostMap::CostMap() : _scale(1.0), _voxels(){}
 
-CostMap::CostMap(double scale) : _scale(scale), _voxels(){}
+CostMap::CostMap(float scale) : _scale(scale){
+    std::fill(_voxels.begin(), _voxels.end(), VoxelState::EMPTY);
+}
 
 // flatten 3D grid
-int flatten(std::array<int,3> indices)
+int CostMap::flatten(std::array<int,3> indices) const
 {
-    return indices[0] + 64*indices[1] + 64*64*indices[2];
+    return indices[0] + _res*indices[1] + _res*_res*indices[2];
 }
 
 // unflatten 3D grid
-std::array<int,3> indices unflatten(int i)
+std::array<int,3> CostMap::unflatten(int i) const
 {
-    return {i % 64, (i / 64) % 64, i / 64*64}; 
+    return {i % _res, (i / _res) % _res, i / (_res*_res)}; 
 }
 
-VoxelState CostMap::getVoxelStateByIndices(std::array<int,3> indices)
+VoxelState CostMap::getVoxelStateByIndices(std::array<int,3> indices) const
 {
     return _voxels[flatten(indices)];
 }
 
-std::array<float,3> CostMap::getVoxelPosition(std::array<int,3> indices)
+std::array<float,3> CostMap::getVoxelPosition(std::array<int,3> indices) const
 {
     return {(indices[0]+0.5)*_scale,(indices[1]+0.5)*_scale,(indices[2]+0.5)*_scale};
 }
@@ -48,11 +50,6 @@ void CostMap::setVoxelStateByPosition(std::array<float,3> position, VoxelState s
         throw std::runtime_error("Voxel index found to be less than 0. Check CostMap limits.");
     }
     setVoxelStateByIndices(indices, state);
-}
-
-std::array<float,3> CostMap::getMaxPosition()
-{
-    return getVoxelPosition({64,64,64});
 }
 
 void CostMap::addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_max)
@@ -85,47 +82,43 @@ void CostMap::addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_m
 
 const std::vector<std::array<int,3>> CostMap::emptyNeighbors(std::array<int,3> indices) const
 {
-    int index_flat = indices[0] + 64*indices[1] + 64*64*indices[2];
+    int index_flat = flatten(indices);
     std::vector<std::array<int,3>> neighbors;
 
-    if (indices[0] < 64-1) // x axis +
+    if (indices[0] < _res-1) // x axis +
     {
         if (_voxels[index_flat + 1] == VoxelState::EMPTY){
             neighbors.push_back(unflatten(index_flat + 1));
         }
     }
-    if (index[0] > 0) // x axis -
+    if (indices[0] > 0) // x axis -
     {
         if (_voxels[index_flat - 1] == VoxelState::EMPTY){
             neighbors.push_back(unflatten(index_flat - 1));
         }
     }
-    if (index[1] < 64-1) // y axis +
+    if (indices[1] < _res-1) // y axis +
     {
-        const Voxel* next = &(_voxels[index[0]][index[1]+1][index[2]]);
-        if (next->getCost() < 10){
-            neighbors.push_back(next);
+        if (_voxels[index_flat + _res] == VoxelState::EMPTY){
+            neighbors.push_back(unflatten(index_flat + _res));
         }
     }
-    if (index[1] > 0) // y axis -
+    if (indices[1] > 0) // y axis -
     {
-        const Voxel* next = &(_voxels[index[0]][index[1]-1][index[2]]);
-        if (next->getCost() < 10){
-            neighbors.push_back(next);
+        if (_voxels[index_flat - _res] == VoxelState::EMPTY){
+            neighbors.push_back(unflatten(index_flat - _res));
         }
     }
-    if (index[2] < 64-1) // z axis +
+    if (indices[2] < _res-1) // z axis +
     {
-        const Voxel* next = &(_voxels[index[0]][index[1]][index[2]+1]);
-        if (next->getCost() < 10){
-            neighbors.push_back(next);
+        if (_voxels[index_flat + _res*_res] == VoxelState::EMPTY){
+            neighbors.push_back(unflatten(index_flat + _res*_res));
         }
     }
-    if (index[2] > 0) // z axis -
+    if (indices[2] > 0) // z axis -
     {
-        const Voxel* next = &(_voxels[index[0]][index[1]][index[2]-1]);
-        if (next->getCost() < 10){
-            neighbors.push_back(next);
+        if (_voxels[index_flat - _res*_res] == VoxelState::EMPTY){
+            neighbors.push_back(unflatten(index_flat - _res*_res));
         }
     }
 
@@ -133,15 +126,15 @@ const std::vector<std::array<int,3>> CostMap::emptyNeighbors(std::array<int,3> i
 }
 
 // Amanatides & Woo Algorithm to traverse line of sight segment
-bool CostMap::checkCollision(const Voxel* voxelA, const Voxel* voxelB) const
+bool CostMap::checkCollision(std::array<int,3> voxelA, std::array<int,3> voxelB) const
 {
     // Initialization
-    Eigen::Vector3f A(voxelA->getPosition()[0],voxelA->getPosition()[1],voxelA->getPosition()[2]);
-    Eigen::Vector3f B(voxelB->getPosition()[0],voxelB->getPosition()[1],voxelB->getPosition()[2]);
+    Eigen::Vector3f A(getVoxelPosition(voxelA)[0],getVoxelPosition(voxelA)[1],getVoxelPosition(voxelA)[2]);
+    Eigen::Vector3f B(getVoxelPosition(voxelB)[0],getVoxelPosition(voxelB)[1],getVoxelPosition(voxelB)[2]);
     Eigen::Vector3f v = (B-A) / (B-A).norm(); // unit vector
-    float X = voxelA->getIndex()[0];
-    float Y = voxelA->getIndex()[1];
-    float Z = voxelA->getIndex()[2];
+    float X = voxelA[0];
+    float Y = voxelA[1];
+    float Z = voxelA[2];
     int stepX = (0 < v(0)) - (0 > v(0)); // 1 for positive x direction, -1 for negative, and 0 for neutral
     int stepY = (0 < v(1)) - (0 > v(1));
     int stepZ = (0 < v(2)) - (0 > v(2));
@@ -172,10 +165,11 @@ bool CostMap::checkCollision(const Voxel* voxelA, const Voxel* voxelB) const
     float tDeltaX = (v * (_scale)/v(0)).norm();
     float tDeltaY = (v * (_scale)/v(1)).norm();
     float tDeltaZ = (v * (_scale)/v(2)).norm();
-    const Voxel* current = voxelA;
 
+    bool reachedVoxelB = false;
+    int count = 0;
     // Incremental Traversal
-    while(current != voxelB)
+    while(!reachedVoxelB)
     {
         if(tMaxX < tMaxY && tMaxX < tMaxZ) //tMaxX is smallest
         {   
@@ -193,17 +187,22 @@ bool CostMap::checkCollision(const Voxel* voxelA, const Voxel* voxelB) const
             Z = Z + stepZ;
         }
 
-        current = &_voxels[X][Y][Z];
-
-        if (current == nullptr)
+        
+        if (count == 1000)
         {
-            throw std::runtime_error("Current Voxel is Null");
+            throw std::runtime_error("Voxel traversal during collision check taking too long (count = 1000)");
         }
 
-        if (current->getCost() > 2){
+        if (getVoxelStateByIndices({X,Y,Z}) == VoxelState::OCCUPIED){
             // std::cout << "COLLISION FOUND" << std::endl;
             return true;
         }
+
+        // check if voxelB has been reached
+        if(X==voxelB[0] && Y==voxelB[1] && Z==voxelB[2]){
+            reachedVoxelB = true;
+        }
+        count++;
     }
 
 
@@ -212,7 +211,7 @@ bool CostMap::checkCollision(const Voxel* voxelA, const Voxel* voxelB) const
 }
 
 
-std::array<float,3> CostMap::getMaxPosition()
+std::array<float,3> CostMap::getMaxPosition() const
 {
-    return getVoxel({_dimensions[0]-1,_dimensions[1]-1,_dimensions[2]-1})->getPosition();
+    return getVoxelPosition({_res-1,_res-1,_res-1});
 }

@@ -1,14 +1,12 @@
 #include "Search.hpp"
 
 namespace Search{
-  PathMap runBreadthFirst(const CostMap& costMap, const Voxel* start, const Voxel* goal)
+  PathMap runBreadthFirst(const CostMap& costMap, const std::array<int,3> start, const std::array<int,3> goal)
   {
     std::cout << "Breadth-first search starting" << std::endl;
     auto startTimer = std::chrono::high_resolution_clock::now();
-    VoxelsRef voxels = costMap.getVoxels();
 
-    std::queue<const Voxel*> frontier;
-    // const Voxel* start = &voxels[0][0][0];
+    std::queue<std::array<int,3>> frontier;
     frontier.push(start);
 
     PathMap came_from;
@@ -17,16 +15,17 @@ namespace Search{
     int count = 0;
     while(!frontier.empty())
     {
-      const Voxel* current = frontier.front();
+      std::array<int,3> current = frontier.front();
       frontier.pop();
 
       if (current == goal)
       {
         break;
       }
-
-      for (const Voxel* next : costMap.neighbors(current))
+      // std::cout << "current: " << current[0] << " " << current[1] << " " << current[2] << std::endl;
+      for (std::array<int,3> next : costMap.emptyNeighbors(current))
       {
+        // std::cout << "next: " << next[0] << " " << next[1] << " " << next[2] << std::endl;
         if (came_from.find(next) == came_from.end())
         {
           frontier.push(next);
@@ -46,13 +45,13 @@ namespace Search{
 
 
   // Remove redundant waypoints from path
-  void cleanPath(const CostMap& costMap, std::vector<const Voxel*>& path) // start --> goal
+  void cleanPath(const CostMap& costMap, std::vector<std::array<int,3>>& path) // start --> goal
   { 
     std::cout << "Path cleaning started" << std::endl;
     
     auto startTimer = std::chrono::high_resolution_clock::now();
     int i = 0;
-    const Voxel* current = path[0];
+    std::array<int,3> current = path[0];
     bool foundGoal = false;
     if (path.size() <= 1) 
     {
@@ -69,7 +68,7 @@ namespace Search{
       int j = i+1;
       while (!foundFurthest)
       {
-        const Voxel* next = path[j];
+        std::array<int,3> next = path[j];
         
         if(next == path.back())
         {

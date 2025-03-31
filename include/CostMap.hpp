@@ -20,24 +20,23 @@ class CostMap
 public:
     CostMap();
     CostMap(float scale);
-    VoxelState getVoxelStateByIndices(std::array<int,3> indices);
-    std::array<float,3> getVoxelPosition(std::array<int,3> indices);
+    VoxelState getVoxelStateByIndices(std::array<int,3> indices) const;
+    std::array<float,3> getVoxelPosition(std::array<int,3> indices) const;
     void setVoxelStateByIndices(std::array<int,3> indices, VoxelState state);
     void setVoxelStateByPosition(std::array<float,3> position, VoxelState state);
-    void addObstacle(std::array<double,3> xyz_min, std::array<double,3> xyz_max);
+    void addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_max);
     const std::vector<std::array<int,3>> emptyNeighbors(std::array<int,3> indices) const;
     bool checkCollision(std::array<int,3> voxelA, std::array<int,3> voxelB) const;
-    std::array<float,3> getMaxPosition();
-    float getScale(){ return _scale;};
-    std::array<int,3> getDims(){ return {64,64,64};};
-
-
-    // const std::array<VoxelState, N>& getVoxels() const;
-    // Voxel* getVoxel(std::array<int,3> index);
-    // Voxel* findVoxelByPosition(std::array<double,3> position);
-
+    std::array<float,3> getMaxPosition() const;
+    float getScale() const { return _scale;} ;
+    std::array<int,3> getDims()const{ return {_res,_res,_res};};
+    
 private:
-    constexpr int _N = 262144; // 64*64*64
+    int flatten(std::array<int,3> indices) const;
+    std::array<int,3> unflatten(int i) const;
+
+    static constexpr int _res = 100;
+    static constexpr int _N = _res*_res*_res;
     const float _scale; // length of each voxel edge
     std::array<VoxelState, _N> _voxels;
 };
