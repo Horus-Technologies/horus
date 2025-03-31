@@ -23,6 +23,7 @@ public:
     CostMap(float scale);
     VoxelState getVoxelStateByIndices(std::array<int,3> indices) const;
     std::array<float,3> getVoxelPosition(std::array<int,3> indices) const;
+    std::array<int,3> getVoxelIndices(std::array<float,3> position) const;
     void setVoxelStateByIndices(std::array<int,3> indices, VoxelState state);
     void setVoxelStateByPosition(std::array<float,3> position, VoxelState state);
     void addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_max);

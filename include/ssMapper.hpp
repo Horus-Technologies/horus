@@ -13,6 +13,8 @@ Mapper node for voxelization of a point cloud from Realsense Camera
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include "tf2_ros/transform_broadcaster.h"
+#include <geometry_msgs/msg/transform_stamped.hpp>
 
 using namespace std::chrono_literals;
 
@@ -27,11 +29,14 @@ class ssMapper : public rclcpp::Node
         void callback_pose(const nav_msgs::msg::Odometry::SharedPtr odom);
         void processPoints();
         void visualizeCostMap();
+        void transformBroadcast();
 
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr _subscriber_points;
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr _subscriber_pose;
         rclcpp::TimerBase::SharedPtr _timer;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_map_markers;
+        std::unique_ptr<tf2_ros::TransformBroadcaster> _map_broadcaster;
+        std::unique_ptr<tf2_ros::TransformBroadcaster> _camera_broadcaster;
 
         CostMap* _costMap;
         sensor_msgs::msg::PointCloud2 _points;
@@ -41,9 +46,7 @@ class ssMapper : public rclcpp::Node
         int _count;
         bool _poseStartSet = false;
         bool _pointsReceived = false;
-        float _xOffset;
-        float _yOffset;
-        float _zOffset; // mainly so that floor doesn't get filled up with voxels
+        std::array<float,3> _mapOffset;
         std::mutex _points_mutex;
 };
 

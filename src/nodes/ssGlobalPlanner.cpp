@@ -8,7 +8,7 @@ This node has access to the costMap.
 using namespace std::chrono_literals;
 
 ssGlobalPlanner::ssGlobalPlanner(CostMap* costMap) 
-: Node("ssGlobalPlanner"), _costMap(costMap), _start(&_costMap->getVoxels()[0][0][0]), _currentGoalIndex(0)
+: Node("ssGlobalPlanner"), _costMap(costMap), _currentGoalIndex(0)
 {
     // Subscribing
     rclcpp::QoS qos(rclcpp::KeepLast(10)); 
@@ -22,7 +22,7 @@ ssGlobalPlanner::ssGlobalPlanner(CostMap* costMap)
     _publisherGoal = this->create_publisher<std_msgs::msg::UInt16MultiArray>("/global_goal", 10);
     _timer = this->create_wall_timer(20ms, std::bind(&ssGlobalPlanner::run, this));
 
-    _goals.push_back({30,90,15});
+    _goals.push_back({10,60,10});
     // _goals.push_back({79,15,15});
     // _goals.push_back({79,5,5});
     // _goals.push_back({1,15,15});
@@ -31,22 +31,17 @@ ssGlobalPlanner::ssGlobalPlanner(CostMap* costMap)
 
 void ssGlobalPlanner::run()
 {
-    // _start = _costMap->findVoxelByPosition({
-    //     _lastPoseDrone.pose.position.x,
-    //     _lastPoseDrone.pose.position.y,
-    //     _lastPoseDrone.pose.position.z
-    // });
     if(!_planComplete){
         // Check if current goal is reached, and update _currentGoalIndex if so
-        const Voxel* goalPointVoxel = _costMap->getVoxel({
+        std::array<int,3> goalPointVoxel = {
             _goals[_currentGoalIndex][0],
             _goals[_currentGoalIndex][1],
-            _goals[_currentGoalIndex][2]});
+            _goals[_currentGoalIndex][2]};
         
         float distanceToGoalPoint = sqrt(
-            pow(_lastPoseDrone.pose.position.x - goalPointVoxel->getPosition()[0], 2) +
-            pow(_lastPoseDrone.pose.position.y - goalPointVoxel->getPosition()[1], 2) +
-            pow(_lastPoseDrone.pose.position.z - goalPointVoxel->getPosition()[2], 2));
+            pow(_lastPoseDrone.pose.position.x - _costMap->getVoxelPosition(goalPointVoxel)[0], 2) +
+            pow(_lastPoseDrone.pose.position.y - _costMap->getVoxelPosition(goalPointVoxel)[1], 2) +
+            pow(_lastPoseDrone.pose.position.z - _costMap->getVoxelPosition(goalPointVoxel)[2], 2));
         if (distanceToGoalPoint < 0.05)
         {   
             _currentGoalIndex = _currentGoalIndex + 1;

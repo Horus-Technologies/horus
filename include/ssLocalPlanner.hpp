@@ -35,7 +35,7 @@ private:
     void run();
     void callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp);
     void callback_goal(const std_msgs::msg::UInt16MultiArray::SharedPtr goal);
-    void visualizePath(std::vector<const Voxel*>& path);
+    void visualizePath(std::vector<std::array<int,3>>& path);
     void visualizeCostMap();
 
     // Publisher members
@@ -52,10 +52,9 @@ private:
     geometry_msgs::msg::PoseStamped _lastPoseDrone;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscriber;
 
-    std::array<std::vector<std::array<double,3>>,2> _obstacles;
     CostMap* _costMap;
-    const Voxel* _start;
-    const Voxel* _goal;
+    std::array<int,3> _start;
+    std::array<int,3> _goal;
 };
 
 #endif

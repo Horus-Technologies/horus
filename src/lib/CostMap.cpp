@@ -34,6 +34,14 @@ std::array<float,3> CostMap::getVoxelPosition(std::array<int,3> indices) const
     return {(indices[0]+0.5)*_scale,(indices[1]+0.5)*_scale,(indices[2]+0.5)*_scale};
 }
 
+std::array<int,3> CostMap::getVoxelIndices(std::array<float,3> position) const{
+    return {
+        std::round(position[0]/_scale - 0.5),
+        std::round(position[1]/_scale - 0.5),
+        std::round(position[2]/_scale - 0.5)
+    };
+}
+
 void CostMap::setVoxelStateByIndices(std::array<int,3> indices, VoxelState state)
 {
     std::lock_guard<std::mutex> lock(map_mutex);

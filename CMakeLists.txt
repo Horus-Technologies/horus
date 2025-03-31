@@ -24,6 +24,7 @@ find_package(Eigen3 REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
@@ -47,8 +48,8 @@ include_directories(include)
 
 add_executable(fsm 
   src/nodes/ssFSM.cpp
-  # src/nodes/ssGlobalPlanner.cpp
-  # src/nodes/ssLocalPlanner.cpp
+  src/nodes/ssGlobalPlanner.cpp
+  src/nodes/ssLocalPlanner.cpp
   # src/nodes/ssTrajectoryController.cpp  
   src/nodes/ssMapper.cpp  
   src/lib/Voxel.cpp
@@ -62,6 +63,7 @@ ament_target_dependencies(fsm
   visualization_msgs
   nav_msgs
   Eigen3
+  tf2_ros
 )
 
 
