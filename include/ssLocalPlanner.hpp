@@ -23,8 +23,9 @@ generates local waypoints within local cost map.
 #include "nav_msgs/msg/path.hpp"
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
-
+#include <mutex>
 #include "Search.hpp"
+
 
 class ssLocalPlanner : public rclcpp::Node
 {
@@ -42,7 +43,6 @@ private:
     rclcpp::TimerBase::SharedPtr _timer;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr _publisher;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_path_markers;
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_map_markers;
     size_t _count;
     nav_msgs::msg::Path _lastPath;
 
@@ -55,6 +55,7 @@ private:
     CostMap* _costMap;
     std::array<int,3> _start;
     std::array<int,3> _goal;
+    std::mutex _mutex;
 };
 
 #endif

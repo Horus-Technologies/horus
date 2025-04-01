@@ -7,9 +7,9 @@ ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
 {
 
     // Callback group
-    auto exclusive_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-    rclcpp::SubscriptionOptions options;
-    options.callback_group = exclusive_group;
+    // auto exclusive_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    // rclcpp::SubscriptionOptions options;
+    // options.callback_group = exclusive_group;
     
     // Subscribing
     rclcpp::QoS qos(rclcpp::KeepLast(10)); 
@@ -18,7 +18,7 @@ ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
     "/ap/pose/filtered", qos,
     [this](const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp) {
         this->callback_drone(poseStamp);
-    },options);
+    });
 
     _subscriberGoal = this->create_subscription<std_msgs::msg::UInt16MultiArray>(
       "/global_goal", 10,
@@ -28,15 +28,15 @@ ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
 
     // Publishing
     _publisher = this->create_publisher<nav_msgs::msg::Path>("waypoints", 10); // waypoints with stamped pose
-    _timer = this->create_wall_timer(500ms, std::bind(&ssLocalPlanner::run, this), exclusive_group);
+    _timer = this->create_wall_timer(500ms, std::bind(&ssLocalPlanner::run, this));
     _publisher_path_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("path/markers", 10);
-    _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
 
 }
 
     // Publisher function for path - on a timer callback
 void ssLocalPlanner::run()
 {
+  // std::lock_guard<std::mutex> lock(_mutex);
   // _costMap->addObstacle({3.2, 5, 0}, {4, 5.2, 2});
   // _costMap->addObstacle({0.2, 4, 0}, {1, 4.2, 2});
   // Update _start
@@ -152,6 +152,7 @@ void ssLocalPlanner::visualizePath(std::vector<std::array<int,3>>& path)
 
 void ssLocalPlanner::callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp)
 {
+  // std::lock_guard<std::mutex> lock(_mutex);
   _lastPoseDrone = *poseStamp;
   RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
   _lastPoseDrone.pose.position.x,
@@ -162,6 +163,7 @@ void ssLocalPlanner::callback_drone(const geometry_msgs::msg::PoseStamped::Share
 
 void ssLocalPlanner::callback_goal(const std_msgs::msg::UInt16MultiArray::SharedPtr goal)
 {
+  // std::lock_guard<std::mutex> lock(_mutex);
   std::vector<uint16_t> goalData = goal->data;
   _goal = {goalData[0],goalData[1],goalData[2]};
 

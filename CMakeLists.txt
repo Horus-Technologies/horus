@@ -91,17 +91,16 @@ ament_target_dependencies(fsm
 # )
 
 # Create Cpp executable for trajectory_controller
-# add_executable(trajectory_controller
-#   src/nodes/ssTrajectoryController.cpp
-# )
-# ament_target_dependencies(trajectory_controller
-#   rclcpp
-#   std_msgs
-#   geometry_msgs
-#   geographic_msgs
-#   Eigen3
-#   nav_msgs
-# )
+add_executable(trajectory_controller
+  src/nodes/ssTrajectoryController.cpp
+)
+ament_target_dependencies(trajectory_controller
+  rclcpp
+  std_msgs
+  geometry_msgs
+  Eigen3
+  nav_msgs
+)
 
 add_executable(demoBFS
   src/nodes/demoBFS.cpp
@@ -145,7 +144,7 @@ ament_target_dependencies(demoVoxelization
 install(TARGETS
   fsm
   # local_planner
-  # trajectory_controller
+  trajectory_controller
   demoBFS
   demoVoxelization
   # tests

@@ -38,7 +38,7 @@ ssMapper::ssMapper(CostMap* costMap)
 void ssMapper::run()
 {
     if (_pointsReceived && _poseStartSet){
-        transformBroadcast();
+        // transformBroadcast();
         processPoints();
         visualizeCostMap();
     }
@@ -181,20 +181,20 @@ void ssMapper::transformBroadcast()
     // Send the transformation
     _map_broadcaster->sendTransform(t);
 
-    geometry_msgs::msg::TransformStamped t_camera;
-    t_camera.header.stamp = this->get_clock()->now();
-    t_camera.header.frame_id = "base_link";
-    t_camera.child_frame_id = "realsense_d435/link/realsense_d435";
+    // geometry_msgs::msg::TransformStamped t_camera;
+    // t_camera.header.stamp = this->get_clock()->now();
+    // t_camera.header.frame_id = "base_link";
+    // t_camera.child_frame_id = "realsense_d435/link/realsense_d435";
 
-    t_camera.transform.translation.x = 0;
-    t_camera.transform.translation.y = 0;
-    t_camera.transform.translation.z = 0;
-    t_camera.transform.rotation.x = q.x();
-    t_camera.transform.rotation.y = q.y();
-    t_camera.transform.rotation.z = q.z();
-    t_camera.transform.rotation.w = q.w();
+    // t_camera.transform.translation.x = 0;
+    // t_camera.transform.translation.y = 0;
+    // t_camera.transform.translation.z = 0;
+    // t_camera.transform.rotation.x = q.x();
+    // t_camera.transform.rotation.y = q.y();
+    // t_camera.transform.rotation.z = q.z();
+    // t_camera.transform.rotation.w = q.w();
 
-    // Send the transformation
-    _camera_broadcaster->sendTransform(t_camera);
+    // // Send the transformation
+    // _camera_broadcaster->sendTransform(t_camera);
 }
     
