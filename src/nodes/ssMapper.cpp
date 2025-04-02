@@ -15,17 +15,17 @@ ssMapper::ssMapper(CostMap* costMap)
         "/realsense/points", 10, // from realsense
         [this](const sensor_msgs::msg::PointCloud2::SharedPtr points) {
             this->callback_points(points);
-        },options);
+        });
 
     _subscriber_pose = this->create_subscription<nav_msgs::msg::Odometry>(
         "/odometry", 10, // from ardupilot
         [this](const nav_msgs::msg::Odometry::SharedPtr odom) {
             this->callback_pose(odom);
-        },options);
+        });
 
     // Timer
     _timer = this->create_wall_timer(
-        300ms, std::bind(&ssMapper::run, this));
+        600ms, std::bind(&ssMapper::run, this));
 
     // Publishers
     _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
@@ -78,7 +78,6 @@ void ssMapper::processPoints(){
     Eigen::Matrix3f R = _orientation.toRotationMatrix();
     std::array<float,3> max_position = _costMap->getMaxPosition();
     //loop through all points
-    RCLCPP_INFO(this->get_logger(),"X Y Z: %f %f %f",*iter_x, *iter_y, *iter_z);
     for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
         //rotate points so they are aligned with robot orientation
         

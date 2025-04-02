@@ -50,7 +50,6 @@ add_executable(fsm
   src/nodes/ssFSM.cpp
   src/nodes/ssGlobalPlanner.cpp
   src/nodes/ssLocalPlanner.cpp
-  # src/nodes/ssTrajectoryController.cpp  
   src/nodes/ssMapper.cpp  
   src/lib/Voxel.cpp
   src/lib/CostMap.cpp
@@ -143,7 +142,6 @@ ament_target_dependencies(demoVoxelization
 # Install Cpp executables
 install(TARGETS
   fsm
-  # local_planner
   trajectory_controller
   demoBFS
   demoVoxelization

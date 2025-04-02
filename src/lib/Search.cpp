@@ -1,42 +1,45 @@
 #include "Search.hpp"
 
 namespace Search{
-  PathMap runBreadthFirst(const CostMap& costMap, const std::array<int,3>& start, const std::array<int,3>& goal)
+  std::unique_ptr<int[]> runBreadthFirst(const CostMap& costMap, const std::array<int,3>& start, const std::array<int,3>& goal)
   {
     std::cout << "Breadth-first search starting" << std::endl;
     auto startTimer = std::chrono::high_resolution_clock::now();
+    int startFlat = costMap.flatten(start);
+    int goalFlat = costMap.flatten(goal);
 
-    std::queue<std::array<int,3>> frontier;
-    frontier.push(start);
+    std::queue<int> frontier;
+    frontier.push(startFlat);
 
-    PathMap came_from;
-    came_from[start] = start;
+    int arraySize = std::pow(costMap.getDims()[0], 3);
+    std::unique_ptr<int[]> came_from = std::make_unique<int[]>(arraySize);
+
+    for (size_t i = 1; i < arraySize; ++i) {
+      came_from[i] = -1;
+    }
+    came_from[startFlat] = startFlat;
 
     int count = 0;
     while(!frontier.empty())
     {
-      std::array<int,3> current = frontier.front();
+      int current = frontier.front();
       frontier.pop();
 
-      if (current == goal)
+      if (current == goalFlat)
       {
         break;
       }
-      // std::cout << "current: " << current[0] << " " << current[1] << " " << current[2] << std::endl;
-      for (std::array<int,3> next : costMap.emptyNeighbors(current))
+      for (int next : costMap.emptyNeighbors(current))
       {
-        // std::cout << "next: " << next[0] << " " << next[1] << " " << next[2] << std::endl;
-        if (came_from.find(next) == came_from.end())
+        if (came_from[next] == -1)
         {
           frontier.push(next);
           came_from[next] = current;
         }
       }
       count++;
-      // "count = %d frontierSize = %ld",count, frontier.size());
     }
-    // RCLCPP_INFO(this->get_logger(),
-    //   "count = %d",count);
+
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
     std::cout << "Breadth-first search finished in " << duration.count() << " sec" << std::endl;

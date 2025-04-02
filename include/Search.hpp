@@ -2,11 +2,12 @@
 #include <unordered_map>
 #include <queue>
 #include <chrono>
+#include <cmath>
 
 using PathMap = std::unordered_map<std::array<int,3>,std::array<int,3>>;
 
 namespace Search{
-    PathMap runBreadthFirst(const CostMap& costMap, const std::array<int,3>& start, const std::array<int,3>& goal);
+    std::unique_ptr<int[]> runBreadthFirst(const CostMap& costMap, const std::array<int,3>& start, const std::array<int,3>& goal);
     void cleanPath(const CostMap& costMap, std::vector<std::array<int,3>>& path);
 }
 

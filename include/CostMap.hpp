@@ -27,15 +27,15 @@ public:
     void setVoxelStateByIndices(const std::array<int,3>& indices, const VoxelState& state);
     void setVoxelStateByPosition(const std::array<float,3>& position, const VoxelState& state);
     void addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_max);
-    const std::vector<std::array<int,3>> emptyNeighbors(std::array<int,3>& indices) const;
+    const std::vector<int> emptyNeighbors(int index_flat) const;
     bool checkCollision(std::array<int,3>& voxelA, std::array<int,3>& voxelB) const;
     std::array<float,3> getMaxPosition() const;
     float getScale() const { return _scale;} ;
     std::array<int,3> getDims()const{ return {_res,_res,_res};};
-    
-private:
     int flatten(const std::array<int,3>& indices) const;
     std::array<int,3> unflatten(int i) const;
+    
+private:
 
     static constexpr int _res = 100;
     static constexpr int _N = _res*_res*_res;

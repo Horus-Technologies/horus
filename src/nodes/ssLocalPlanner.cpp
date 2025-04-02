@@ -52,7 +52,7 @@ void ssLocalPlanner::run()
   RCLCPP_INFO(this->get_logger(), "Path _start set to indices: %d %d %d"
   , _start[0], _start[1], _start[2]);
 
-  PathMap came_from = Search::runBreadthFirst(*_costMap, _start, _goal);
+  std::unique_ptr<int[]> came_from = Search::runBreadthFirst(*_costMap, _start, _goal);
 
   // Obtain path
   std::array<int,3> current = _goal;
@@ -60,7 +60,8 @@ void ssLocalPlanner::run()
   while(current != _start)
   {
     path.push_back(current);
-    std::array<int,3> prev = came_from[current];
+    std::array<int,3> prev = _costMap->unflatten(
+      came_from[_costMap->flatten(current)]);
     current = prev;
   }
   path.push_back(_start); // append start voxel

@@ -88,45 +88,45 @@ void CostMap::addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_m
     }
 }
 
-const std::vector<std::array<int,3>> CostMap::emptyNeighbors(std::array<int,3>& indices) const
+const std::vector<int> CostMap::emptyNeighbors(int index_flat) const
 {
-    int index_flat = flatten(indices);
-    std::vector<std::array<int,3>> neighbors;
+    std::vector<int> neighbors;
+    std::array<int,3> indices = unflatten(index_flat);
     
     if (indices[0] < _res-1) // x axis +
     {
         if (_voxels[index_flat + 1] == VoxelState::EMPTY){
-            neighbors.push_back(unflatten(index_flat + 1));
+            neighbors.push_back(index_flat + 1);
         }
     }
     if (indices[0] > 0) // x axis -
     {
         if (_voxels[index_flat - 1] == VoxelState::EMPTY){
-            neighbors.push_back(unflatten(index_flat - 1));
+            neighbors.push_back(index_flat - 1);
         }
     }
     if (indices[1] < _res-1) // y axis +
     {
         if (_voxels[index_flat + _res] == VoxelState::EMPTY){
-            neighbors.push_back(unflatten(index_flat + _res));
+            neighbors.push_back(index_flat + _res);
         }
     }
     if (indices[1] > 0) // y axis -
     {
         if (_voxels[index_flat - _res] == VoxelState::EMPTY){
-            neighbors.push_back(unflatten(index_flat - _res));
+            neighbors.push_back(index_flat - _res);
         }
     }
     if (indices[2] < _res-1) // z axis +
     {
         if (_voxels[index_flat + _res*_res] == VoxelState::EMPTY){
-            neighbors.push_back(unflatten(index_flat + _res*_res));
+            neighbors.push_back(index_flat + _res*_res);
         }
     }
     if (indices[2] > 0) // z axis -
     {
         if (_voxels[index_flat - _res*_res] == VoxelState::EMPTY){
-            neighbors.push_back(unflatten(index_flat - _res*_res));
+            neighbors.push_back(index_flat - _res*_res);
         }
     }
 
