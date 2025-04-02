@@ -13,7 +13,7 @@ CostMap::CostMap(float scale) : _scale(scale){
 }
 
 // flatten 3D grid
-int CostMap::flatten(std::array<int,3> indices) const
+int CostMap::flatten(const std::array<int,3>& indices) const
 {
     return indices[0] + _res*indices[1] + _res*_res*indices[2];
 }
@@ -24,17 +24,17 @@ std::array<int,3> CostMap::unflatten(int i) const
     return {i % _res, (i / _res) % _res, i / (_res*_res)}; 
 }
 
-VoxelState CostMap::getVoxelStateByIndices(std::array<int,3> indices) const
+VoxelState CostMap::getVoxelStateByIndices(const std::array<int,3>& indices) const
 {
     return _voxels[flatten(indices)];
 }
 
-std::array<float,3> CostMap::getVoxelPosition(std::array<int,3> indices) const
+std::array<float,3> CostMap::getVoxelPosition(const std::array<int,3>& indices) const
 {
     return {(indices[0]+0.5)*_scale,(indices[1]+0.5)*_scale,(indices[2]+0.5)*_scale};
 }
 
-std::array<int,3> CostMap::getVoxelIndices(std::array<float,3> position) const{
+std::array<int,3> CostMap::getVoxelIndices(const std::array<float,3>& position) const{
     return {
         std::round(position[0]/_scale - 0.5),
         std::round(position[1]/_scale - 0.5),
@@ -42,13 +42,12 @@ std::array<int,3> CostMap::getVoxelIndices(std::array<float,3> position) const{
     };
 }
 
-void CostMap::setVoxelStateByIndices(std::array<int,3> indices, VoxelState state)
+void CostMap::setVoxelStateByIndices(const std::array<int,3>& indices, const VoxelState& state)
 {
-    std::lock_guard<std::mutex> lock(map_mutex);
     _voxels[flatten(indices)] = state;
 }
 
-void CostMap::setVoxelStateByPosition(std::array<float,3> position, VoxelState state)
+void CostMap::setVoxelStateByPosition(const std::array<float,3>& position, const VoxelState& state)
 {
     std::array<int,3> indices = {
         std::round(position[0]/_scale - 0.5),
@@ -89,11 +88,11 @@ void CostMap::addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_m
     }
 }
 
-const std::vector<std::array<int,3>> CostMap::emptyNeighbors(std::array<int,3> indices) const
+const std::vector<std::array<int,3>> CostMap::emptyNeighbors(std::array<int,3>& indices) const
 {
     int index_flat = flatten(indices);
     std::vector<std::array<int,3>> neighbors;
-
+    
     if (indices[0] < _res-1) // x axis +
     {
         if (_voxels[index_flat + 1] == VoxelState::EMPTY){
@@ -135,7 +134,7 @@ const std::vector<std::array<int,3>> CostMap::emptyNeighbors(std::array<int,3> i
 }
 
 // Amanatides & Woo Algorithm to traverse line of sight segment
-bool CostMap::checkCollision(std::array<int,3> voxelA, std::array<int,3> voxelB) const
+bool CostMap::checkCollision(std::array<int,3>& voxelA, std::array<int,3>& voxelB) const
 {
     // Initialization
     Eigen::Vector3f A(getVoxelPosition(voxelA)[0],getVoxelPosition(voxelA)[1],getVoxelPosition(voxelA)[2]);

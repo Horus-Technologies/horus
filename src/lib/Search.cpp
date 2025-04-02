@@ -1,7 +1,7 @@
 #include "Search.hpp"
 
 namespace Search{
-  PathMap runBreadthFirst(const CostMap& costMap, const std::array<int,3> start, const std::array<int,3> goal)
+  PathMap runBreadthFirst(const CostMap& costMap, const std::array<int,3>& start, const std::array<int,3>& goal)
   {
     std::cout << "Breadth-first search starting" << std::endl;
     auto startTimer = std::chrono::high_resolution_clock::now();
