@@ -45,7 +45,7 @@ void ssLocalPlanner::run()
     _lastPoseDrone.pose.position.y,
     _lastPoseDrone.pose.position.z
   });
-  // temporarily util costmap frame is figured out
+  // temporarily until costmap frame is figured out
   if (_start[0] < 0) {_start[0] = 0;}
   if (_start[1] < 0) {_start[1] = 0;}
   if (_start[2] < 0) {_start[2] = 0;}
@@ -60,9 +60,12 @@ void ssLocalPlanner::run()
   while(current != _start)
   {
     path.push_back(current);
+    RCLCPP_INFO(this->get_logger(), "Current: %d %d %d"
+      , current[0], current[1], current[2]);
     std::array<int,3> prev = _costMap->unflatten(
       came_from[_costMap->flatten(current)]);
     current = prev;
+    
   }
   path.push_back(_start); // append start voxel
   

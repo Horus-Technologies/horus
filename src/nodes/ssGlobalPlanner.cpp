@@ -22,7 +22,8 @@ ssGlobalPlanner::ssGlobalPlanner(CostMap* costMap)
     _publisherGoal = this->create_publisher<std_msgs::msg::UInt16MultiArray>("/global_goal", 10);
     _timer = this->create_wall_timer(20ms, std::bind(&ssGlobalPlanner::run, this));
 
-    _goals.push_back({20,100,8});
+    //goal indices need to be within costmap!!
+    _goals.push_back({20,98,8});
     _goals.push_back({1,1,5});
     // _goals.push_back({79,5,5});
     // _goals.push_back({1,15,15});

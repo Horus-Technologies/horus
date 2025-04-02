@@ -11,7 +11,7 @@ using namespace std::chrono_literals;
 class demoBFS : public rclcpp::Node
 {
 public:
-    demoBFS() : Node("demoBFS"), _costMap(1), _start({0,5,0}), _goal({99,10,0})
+    demoBFS() : Node("demoBFS"), _costMap(1), _start({0,0,0}), _goal({40,0,10})
     {
         // Timer
         _timer = this->create_wall_timer(
@@ -42,8 +42,8 @@ private:
         path.push_back(_start); // append start voxel
         
         std::reverse(path.begin(),path.end()); // start --> goal
-        Search::cleanPath(_costMap, path);
         visualizePath(path);
+        Search::cleanPath(_costMap, path);
         visualizeCostMap();
     }
 
