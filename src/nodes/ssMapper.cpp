@@ -3,7 +3,7 @@
 using namespace std::chrono_literals;
 
 ssMapper::ssMapper(CostMap* costMap)
-: Node("ssMapper"), _count(0), _costMap(costMap), _positionStart({0,0,0}), _mapOffset({0,0,0})
+: Node("ssMapper"), _count(0), _costMap(costMap), _mapOffset({0,0,0})
 {   
     // Callback group
     auto exclusive_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -15,17 +15,25 @@ ssMapper::ssMapper(CostMap* costMap)
         "/realsense/points", 10, // from realsense
         [this](const sensor_msgs::msg::PointCloud2::SharedPtr points) {
             this->callback_points(points);
-        });
+        },options);
 
-    _subscriber_pose = this->create_subscription<nav_msgs::msg::Odometry>(
-        "/odometry", 10, // from ardupilot
-        [this](const nav_msgs::msg::Odometry::SharedPtr odom) {
-            this->callback_pose(odom);
-        });
+    // _subscriber_pose = this->create_subscription<nav_msgs::msg::Odometry>(
+    //     "/odometry", 10, // from ardupilot
+    //     [this](const nav_msgs::msg::Odometry::SharedPtr odom) {
+    //         this->callback_pose(odom);
+    //     });
+
+    rclcpp::QoS qos(rclcpp::KeepLast(1)); 
+    qos.best_effort();
+    _subscriber_pose = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+    "/ap/pose/filtered", qos,
+    [this](const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp) {
+        this->callback_pose(poseStamp);
+    },options);
 
     // Timer
     _timer = this->create_wall_timer(
-        600ms, std::bind(&ssMapper::run, this));
+        200ms, std::bind(&ssMapper::run, this));
 
     // Publishers
     _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
@@ -37,7 +45,7 @@ ssMapper::ssMapper(CostMap* costMap)
 
 void ssMapper::run()
 {
-    if (_pointsReceived && _poseStartSet){
+    if (_pointsReceived && _poseReceived){
         // transformBroadcast();
         processPoints();
         visualizeCostMap();
@@ -52,20 +60,26 @@ void ssMapper::callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr po
     }
 }
 
-void ssMapper::callback_pose(const nav_msgs::msg::Odometry::SharedPtr odom){
-    _position[0] = odom->pose.pose.position.x;
-    _position[1] = odom->pose.pose.position.y;
-    _position[2] = odom->pose.pose.position.z;
+void ssMapper::callback_pose(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp){
+    std::lock_guard<std::mutex> lock(_points_mutex);
+    _position[0] = poseStamp->pose.position.x;
+    _position[1] = poseStamp->pose.position.y;
+    _position[2] = poseStamp->pose.position.z;
 
-    _orientation.x() = odom->pose.pose.orientation.x;
-    _orientation.y() = odom->pose.pose.orientation.y;
-    _orientation.z() = odom->pose.pose.orientation.z;
-    _orientation.w() = odom->pose.pose.orientation.w;
+    _orientation.x() = poseStamp->pose.orientation.x;
+    _orientation.y() = poseStamp->pose.orientation.y;
+    _orientation.z() = poseStamp->pose.orientation.z;
+    _orientation.w() = poseStamp->pose.orientation.w;
 
-    if (!_poseStartSet){
-        _positionStart = _position;
-        _poseStartSet = true;
+    if (!_poseReceived){
+        // _positionStart = _position;
+        _poseReceived = true;
     }
+
+    RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
+    _position[0],
+    _position[1],
+    _position[2]);
     // _position = _position - _positionStart; // for rosbag
 }
 
@@ -101,6 +115,8 @@ void ssMapper::processPoints(){
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
     RCLCPP_INFO(this->get_logger(),"Points processed in %f sec",duration.count());
+    _poseReceived = false;
+    _pointsReceived = false;
 }
 
 void ssMapper::visualizeCostMap()
@@ -158,7 +174,7 @@ void ssMapper::visualizeCostMap()
     _publisher_map_markers->publish(marker_array);
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
-    RCLCPP_INFO(this->get_logger(),"Map markers publish finished in %f sec",duration.count());
+    // RCLCPP_INFO(this->get_logger(),"Map markers publish finished in %f sec",duration.count());
 }
 
 void ssMapper::transformBroadcast()

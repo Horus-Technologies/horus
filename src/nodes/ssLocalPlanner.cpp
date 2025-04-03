@@ -12,7 +12,7 @@ ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
     // options.callback_group = exclusive_group;
     
     // Subscribing
-    rclcpp::QoS qos(rclcpp::KeepLast(10)); 
+    rclcpp::QoS qos(rclcpp::KeepLast(1)); 
     qos.best_effort();
     _subscriberDrone = this->create_subscription<geometry_msgs::msg::PoseStamped>(
     "/ap/pose/filtered", qos,
@@ -49,8 +49,6 @@ void ssLocalPlanner::run()
   if (_start[0] < 0) {_start[0] = 0;}
   if (_start[1] < 0) {_start[1] = 0;}
   if (_start[2] < 0) {_start[2] = 0;}
-  RCLCPP_INFO(this->get_logger(), "Path _start set to indices: %d %d %d"
-  , _start[0], _start[1], _start[2]);
 
   std::unique_ptr<int[]> came_from = Search::runBreadthFirst(*_costMap, _start, _goal);
 
@@ -60,8 +58,8 @@ void ssLocalPlanner::run()
   while(current != _start)
   {
     path.push_back(current);
-    RCLCPP_INFO(this->get_logger(), "Current: %d %d %d"
-      , current[0], current[1], current[2]);
+    // RCLCPP_INFO(this->get_logger(), "Current: %d %d %d"
+    //   , current[0], current[1], current[2]);
     std::array<int,3> prev = _costMap->unflatten(
       came_from[_costMap->flatten(current)]);
     current = prev;
@@ -158,10 +156,10 @@ void ssLocalPlanner::callback_drone(const geometry_msgs::msg::PoseStamped::Share
 {
   // std::lock_guard<std::mutex> lock(_mutex);
   _lastPoseDrone = *poseStamp;
-  RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
-  _lastPoseDrone.pose.position.x,
-  _lastPoseDrone.pose.position.y,
-  _lastPoseDrone.pose.position.z);
+  // RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
+  // _lastPoseDrone.pose.position.x,
+  // _lastPoseDrone.pose.position.y,
+  // _lastPoseDrone.pose.position.z);
  
 }
 
@@ -171,5 +169,5 @@ void ssLocalPlanner::callback_goal(const std_msgs::msg::UInt16MultiArray::Shared
   std::vector<uint16_t> goalData = goal->data;
   _goal = {goalData[0],goalData[1],goalData[2]};
 
-  RCLCPP_INFO(this->get_logger(),"Goal received from GlobalPlanner: %d %d %d", goalData[0],goalData[1],goalData[2]);
+  // RCLCPP_INFO(this->get_logger(),"Goal received from GlobalPlanner: %d %d %d", goalData[0],goalData[1],goalData[2]);
 }

@@ -31,7 +31,7 @@ void ssTrajectoryController::callback_command()
   double now = _count * 0.01; // sec
   if (_pathAvail){
       // Get relative time from start of following
-      float speedMultiplier = 0.25;
+      float speedMultiplier = 0.5;
       
       double t = (now - _timeStartFollow)*speedMultiplier; // sec
       float segmentDuration = 0; //ms
