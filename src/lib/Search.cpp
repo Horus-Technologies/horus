@@ -3,7 +3,7 @@
 namespace Search{
   std::unique_ptr<int[]> runBreadthFirst(const CostMap& costMap, const std::array<int,3>& start, const std::array<int,3>& goal)
   {
-    // std::cout << "Breadth-first search starting" << std::endl;
+    std::cout << "Breadth-first search starting" << std::endl;
     auto startTimer = std::chrono::high_resolution_clock::now();
     int startFlat = costMap.flatten(start);
     int goalFlat = costMap.flatten(goal);
@@ -42,7 +42,7 @@ namespace Search{
 
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
-    // std::cout << "Breadth-first search finished in " << duration.count() << " sec" << std::endl;
+    std::cout << "Breadth-first search finished in " << duration.count() << " sec" << std::endl;
     return came_from;
   }
 
@@ -50,12 +50,12 @@ namespace Search{
   // Remove redundant waypoints from path
   void cleanPath(const CostMap& costMap, std::vector<std::array<int,3>>& path) // start --> goal
   { 
-    // std::cout << "Path cleaning started" << std::endl;
+    std::cout << "Path cleaning started" << std::endl;
     
     auto startTimer = std::chrono::high_resolution_clock::now();
     if (path.size() <= 1) 
     {
-      // std::cout << "Path length (1) too short to clean." << std::endl;
+      std::cout << "Path length (1) too short to clean." << std::endl;
       return; //early exit
     } 
     int i = 0;
@@ -113,6 +113,6 @@ namespace Search{
     }
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
-    // std::cout << "Clean path finished in " << duration.count() << " sec" << std::endl;
+    std::cout << "Clean path finished in " << duration.count() << " sec" << std::endl;
   }
 }
