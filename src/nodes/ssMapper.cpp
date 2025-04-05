@@ -11,27 +11,19 @@ ssMapper::ssMapper(CostMap* costMap)
     options.callback_group = exclusive_group;
 
     // Subscribers
-    // _subscriber_points = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-    //     "/realsense/points", 10, // from realsense
-    //     [this](const sensor_msgs::msg::PointCloud2::SharedPtr points) {
-    //         this->callback_points(points);
-    //     },options);
+    _subscriber_points = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+        "/realsense/points", 10, // from realsense
+        [this](const sensor_msgs::msg::PointCloud2::SharedPtr points) {
+            this->callback_points(points);
+        },options);
 
-    // rclcpp::QoS qos(rclcpp::KeepLast(1)); 
-    // qos.best_effort();
-    // _subscriber_pose = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-    // "/ap/pose/filtered", qos,
-    // [this](const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp) {
-    //     this->callback_pose(poseStamp);
-    // },options);
-    rclcpp::QoS qos_profile = rclcpp::QoS(10).best_effort();
-    _sub_points.subscribe(this, "/realsense/points",qos_profile.get_rmw_qos_profile());
-    _sub_pose.subscribe(this,"/ap/pose/filtered",qos_profile.get_rmw_qos_profile());
-    // Synchronizer for approximate time sync
-    _sync = std::make_shared<message_filters::Synchronizer<ApproximateSyncPolicy>>(
-        ApproximateSyncPolicy(10), _sub_points, _sub_pose);
-    _sync->setMaxIntervalDuration(rclcpp::Duration::from_seconds(0.5));
-    _sync->registerCallback(std::bind(&ssMapper::synced_callback, this, std::placeholders::_1, std::placeholders::_2));
+    rclcpp::QoS qos(rclcpp::KeepLast(10)); 
+    qos.best_effort();
+    _subscriber_pose = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+    "/ap/pose/filtered", qos,
+    [this](const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp) {
+        this->callback_pose(poseStamp);
+    },options);
 
     // Timer
     _timer = this->create_wall_timer(
@@ -54,47 +46,26 @@ void ssMapper::run()
     }
 }
 
-// void ssMapper::callback_points(const sensor_msgs::msg::PointCloud2::ConstSharedPtr points){
-//     std::lock_guard<std::mutex> lock(_points_mutex);
-//     _points = *points;
-//     if (!_pointsReceived){
-//         _pointsReceived = true;
-//     }
-//     RCLCPP_INFO(this->get_logger(),"Points Received");
-// }
-
-// void ssMapper::callback_pose(const geometry_msgs::msg::PoseStamped::ConstSharedPtr poseStamp){
-//     std::lock_guard<std::mutex> lock(_points_mutex);
-//     _position[0] = poseStamp->pose.position.x;
-//     _position[1] = poseStamp->pose.position.y;
-//     _position[2] = poseStamp->pose.position.z;
-
-//     _orientation.x() = poseStamp->pose.orientation.x;
-//     _orientation.y() = poseStamp->pose.orientation.y;
-//     _orientation.z() = poseStamp->pose.orientation.z;
-//     _orientation.w() = poseStamp->pose.orientation.w;
-
-//     if (!_poseReceived){
-//         // _positionStart = _position;
-//         _poseReceived = true;
-//     }
-
-//     RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
-//     _position[0],
-//     _position[1],
-//     _position[2]);
-//     // _position = _position - _positionStart; // for rosbag
-// }
-void ssMapper::synced_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &points,
-    const geometry_msgs::msg::PoseStamped::ConstSharedPtr &poseStamp)
-{
+void ssMapper::callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
     std::lock_guard<std::mutex> lock(_points_mutex);
-    _points = *points;
+    _points_buffer.push_front(points);
+
+    if (_points_buffer.size() > 20){
+        _points_buffer.pop_back();
+    }
     if (!_pointsReceived){
         _pointsReceived = true;
+        _pointStartTime = rclcpp::Time(points->header.stamp).seconds();
     }
-    RCLCPP_INFO(this->get_logger(),"Points Received");
+    double pointSec = rclcpp::Time(points->header.stamp).seconds();
+    // RCLCPP_INFO(this->get_logger(),"Point Received with Timestamp: %f", 
+    // pointSec);
 
+    // RCLCPP_INFO(this->get_logger(),"Points added to buffer. Buffer of size: %ld", _points_buffer.size());
+}
+
+void ssMapper::callback_pose(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp){
+    std::lock_guard<std::mutex> lock(_points_mutex);
     _position[0] = poseStamp->pose.position.x;
     _position[1] = poseStamp->pose.position.y;
     _position[2] = poseStamp->pose.position.z;
@@ -106,12 +77,46 @@ void ssMapper::synced_callback(const sensor_msgs::msg::PointCloud2::ConstSharedP
 
     if (!_poseReceived){
         _poseReceived = true;
+        _poseStartTime = rclcpp::Time(poseStamp->header.stamp).seconds();
     }
 
     RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
     _position[0],
     _position[1],
     _position[2]);
+
+    double poseSec = rclcpp::Time(poseStamp->header.stamp).seconds();
+
+    RCLCPP_INFO(this->get_logger(),"Drone Pose Updated with Timestamp: %f", 
+    poseSec - _poseStartTime);
+
+    // Match pose to points by timestamp and update _points
+    findBestPointsMatch(rclcpp::Time(poseStamp->header.stamp));
+
+    double pointSec = rclcpp::Time(_points.header.stamp).seconds();
+    RCLCPP_INFO(this->get_logger(),"Point Updated with Timestamp: %f", 
+    pointSec - _pointStartTime);
+}
+
+void ssMapper::findBestPointsMatch(rclcpp::Time poseTime){
+    // Iterate through points buffer to and find the best match by timestamp
+    sensor_msgs::msg::PointCloud2::SharedPtr bestPoint;
+    double smallestTimeDiff = std::numeric_limits<double>::max();
+    for (const sensor_msgs::msg::PointCloud2::SharedPtr& point : _points_buffer)
+    {
+        rclcpp::Time pointTime(point->header.stamp);
+        double diff = std::abs((poseTime - pointTime).seconds()) + _pointStartTime - _poseStartTime;
+        if(diff < smallestTimeDiff){
+            smallestTimeDiff = diff;
+            bestPoint = point;
+        }
+    }
+    if (bestPoint) {
+        _points = *bestPoint;
+    } else {
+        RCLCPP_WARN(this->get_logger(), "No valid PointCloud2 found in buffer.");
+        // handle this case appropriately
+    }
 }
 
 void ssMapper::processPoints(){
@@ -146,8 +151,8 @@ void ssMapper::processPoints(){
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
     RCLCPP_INFO(this->get_logger(),"Points processed in %f sec",duration.count());
-    _poseReceived = false;
-    _pointsReceived = false;
+    // _poseReceived = false;
+    // _pointsReceived = false;
 }
 
 void ssMapper::visualizeCostMap()
