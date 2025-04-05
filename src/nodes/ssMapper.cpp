@@ -19,10 +19,10 @@ ssMapper::ssMapper(CostMap* costMap)
 
     rclcpp::QoS qos(rclcpp::KeepLast(10)); 
     qos.best_effort();
-    _subscriber_pose = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-    "/ap/pose/filtered", qos,
-    [this](const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp) {
-        this->callback_pose(poseStamp);
+    _subscriber_pose = this->create_subscription<nav_msgs::msg::Odometry>(
+    "/odometry", qos,
+    [this](const nav_msgs::msg::Odometry::SharedPtr odometry) {
+        this->callback_pose(odometry);
     },options);
 
     // Timer
@@ -64,20 +64,20 @@ void ssMapper::callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr po
     // RCLCPP_INFO(this->get_logger(),"Points added to buffer. Buffer of size: %ld", _points_buffer.size());
 }
 
-void ssMapper::callback_pose(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp){
+void ssMapper::callback_pose(const nav_msgs::msg::Odometry::SharedPtr odometry){
     std::lock_guard<std::mutex> lock(_points_mutex);
-    _position[0] = poseStamp->pose.position.x;
-    _position[1] = poseStamp->pose.position.y;
-    _position[2] = poseStamp->pose.position.z;
+    _position[0] = odometry->pose.pose.position.x;
+    _position[1] = odometry->pose.pose.position.y;
+    _position[2] = odometry->pose.pose.position.z;
 
-    _orientation.x() = poseStamp->pose.orientation.x;
-    _orientation.y() = poseStamp->pose.orientation.y;
-    _orientation.z() = poseStamp->pose.orientation.z;
-    _orientation.w() = poseStamp->pose.orientation.w;
+    _orientation.x() = odometry->pose.pose.orientation.x;
+    _orientation.y() = odometry->pose.pose.orientation.y;
+    _orientation.z() = odometry->pose.pose.orientation.z;
+    _orientation.w() = odometry->pose.pose.orientation.w;
 
     if (!_poseReceived){
         _poseReceived = true;
-        _poseStartTime = rclcpp::Time(poseStamp->header.stamp).seconds();
+        _poseStartTime = rclcpp::Time(odometry->header.stamp).seconds();
     }
 
     RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
@@ -85,13 +85,13 @@ void ssMapper::callback_pose(const geometry_msgs::msg::PoseStamped::SharedPtr po
     _position[1],
     _position[2]);
 
-    double poseSec = rclcpp::Time(poseStamp->header.stamp).seconds();
+    double poseSec = rclcpp::Time(odometry->header.stamp).seconds();
 
     RCLCPP_INFO(this->get_logger(),"Drone Pose Updated with Timestamp: %f", 
     poseSec - _poseStartTime);
 
     // Match pose to points by timestamp and update _points
-    findBestPointsMatch(rclcpp::Time(poseStamp->header.stamp));
+    findBestPointsMatch(rclcpp::Time(odometry->header.stamp));
 
     double pointSec = rclcpp::Time(_points.header.stamp).seconds();
     RCLCPP_INFO(this->get_logger(),"Point Updated with Timestamp: %f", 
@@ -145,15 +145,24 @@ void ssMapper::processPoints(){
             && tempPoint[2] > 0 && tempPoint[2] < max_position[2]){ 
             // determine which voxel in costmap this point belongs to
             _costMap->setVoxelStateByPosition({tempPoint[0], tempPoint[1], tempPoint[2]}, VoxelState::OCCUPIED);
+            // set neighbors to be occupied also
+            std::array<int,3> indices = _costMap->getVoxelIndices({tempPoint[0], tempPoint[1], tempPoint[2]});
+            std::vector<int> neighbors = _costMap->emptyNeighbors(_costMap->flatten(indices));
+            for (int i : neighbors){
+                _costMap->setVoxelStateByIndices(_costMap->unflatten(i), VoxelState::OCCUPIED);
+            }
         }
     }
 
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
     RCLCPP_INFO(this->get_logger(),"Points processed in %f sec",duration.count());
-    // _poseReceived = false;
-    // _pointsReceived = false;
 }
+
+// void ssMapper::inflateRecursively()
+// {
+
+// }
 
 void ssMapper::visualizeCostMap()
 {

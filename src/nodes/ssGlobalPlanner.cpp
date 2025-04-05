@@ -23,7 +23,8 @@ ssGlobalPlanner::ssGlobalPlanner(CostMap* costMap)
     _timer = this->create_wall_timer(20ms, std::bind(&ssGlobalPlanner::run, this));
 
     //goal indices need to be within costmap!!
-    _goals.push_back({20,50,8});
+    _goals.push_back({20,70,8});
+    _goals.push_back({60,60,8});
     _goals.push_back({1,1,5});
     // _goals.push_back({79,5,5});
     // _goals.push_back({1,15,15});

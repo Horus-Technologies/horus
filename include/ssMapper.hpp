@@ -30,14 +30,14 @@ class ssMapper : public rclcpp::Node
     private:
         void run();
         void callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points);
-        void callback_pose(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp);
+        void callback_pose(const nav_msgs::msg::Odometry::SharedPtr poseStamp);
         void findBestPointsMatch(rclcpp::Time poseTime);
         void processPoints();
         void visualizeCostMap();
         void transformBroadcast();
 
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr _subscriber_points;
-        rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _subscriber_pose;
+        rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr _subscriber_pose;
 
         rclcpp::TimerBase::SharedPtr _timer;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_map_markers;
