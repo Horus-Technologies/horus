@@ -17,6 +17,10 @@ Mapper node for voxelization of a point cloud from Realsense Camera
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include "geometry_msgs/msg/pose_stamped.hpp"
 
+#include <message_filters/subscriber.h>
+#include <message_filters/time_synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
+
 using namespace std::chrono_literals;
 
 class ssMapper : public rclcpp::Node
@@ -26,14 +30,21 @@ class ssMapper : public rclcpp::Node
 
     private:
         void run();
-        void callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points);
-        void callback_pose(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp);
+        // void callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points);
+        // void callback_pose(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp);
+        void synced_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &points,
+            const geometry_msgs::msg::PoseStamped::ConstSharedPtr &poseStamp);
         void processPoints();
         void visualizeCostMap();
         void transformBroadcast();
 
-        rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr _subscriber_points;
-        rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _subscriber_pose;
+        // rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr _subscriber_points;
+        // rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _subscriber_pose;
+        typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, geometry_msgs::msg::PoseStamped> ApproximateSyncPolicy;
+        message_filters::Subscriber<sensor_msgs::msg::PointCloud2> _sub_points;
+        message_filters::Subscriber<geometry_msgs::msg::PoseStamped> _sub_pose;
+        std::shared_ptr<message_filters::Synchronizer<ApproximateSyncPolicy>> _sync;
+
         rclcpp::TimerBase::SharedPtr _timer;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_map_markers;
         std::unique_ptr<tf2_ros::TransformBroadcaster> _map_broadcaster;

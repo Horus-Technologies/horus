@@ -11,6 +11,7 @@
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <depend>rclcpp</depend>
+  <depend>message_filters</depend>
   <depend>tf2_ros</depend>
   <depend>nav_msgs</depend>
   <depend>sensor_msgs</depend>

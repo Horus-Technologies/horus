@@ -25,6 +25,7 @@ find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(message_filters REQUIRED)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
@@ -63,6 +64,7 @@ ament_target_dependencies(fsm
   nav_msgs
   Eigen3
   tf2_ros
+  message_filters
 )
 
 

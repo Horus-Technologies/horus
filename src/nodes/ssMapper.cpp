@@ -11,29 +11,31 @@ ssMapper::ssMapper(CostMap* costMap)
     options.callback_group = exclusive_group;
 
     // Subscribers
-    _subscriber_points = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        "/realsense/points", 10, // from realsense
-        [this](const sensor_msgs::msg::PointCloud2::SharedPtr points) {
-            this->callback_points(points);
-        },options);
+    // _subscriber_points = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+    //     "/realsense/points", 10, // from realsense
+    //     [this](const sensor_msgs::msg::PointCloud2::SharedPtr points) {
+    //         this->callback_points(points);
+    //     },options);
 
-    // _subscriber_pose = this->create_subscription<nav_msgs::msg::Odometry>(
-    //     "/odometry", 10, // from ardupilot
-    //     [this](const nav_msgs::msg::Odometry::SharedPtr odom) {
-    //         this->callback_pose(odom);
-    //     });
-
-    rclcpp::QoS qos(rclcpp::KeepLast(1)); 
-    qos.best_effort();
-    _subscriber_pose = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-    "/ap/pose/filtered", qos,
-    [this](const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp) {
-        this->callback_pose(poseStamp);
-    },options);
+    // rclcpp::QoS qos(rclcpp::KeepLast(1)); 
+    // qos.best_effort();
+    // _subscriber_pose = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+    // "/ap/pose/filtered", qos,
+    // [this](const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp) {
+    //     this->callback_pose(poseStamp);
+    // },options);
+    rclcpp::QoS qos_profile = rclcpp::QoS(10).best_effort();
+    _sub_points.subscribe(this, "/realsense/points",qos_profile.get_rmw_qos_profile());
+    _sub_pose.subscribe(this,"/ap/pose/filtered",qos_profile.get_rmw_qos_profile());
+    // Synchronizer for approximate time sync
+    _sync = std::make_shared<message_filters::Synchronizer<ApproximateSyncPolicy>>(
+        ApproximateSyncPolicy(10), _sub_points, _sub_pose);
+    _sync->setMaxIntervalDuration(rclcpp::Duration::from_seconds(0.5));
+    _sync->registerCallback(std::bind(&ssMapper::synced_callback, this, std::placeholders::_1, std::placeholders::_2));
 
     // Timer
     _timer = this->create_wall_timer(
-        200ms, std::bind(&ssMapper::run, this));
+        500ms, std::bind(&ssMapper::run, this));
 
     // Publishers
     _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
@@ -52,16 +54,47 @@ void ssMapper::run()
     }
 }
 
-void ssMapper::callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
+// void ssMapper::callback_points(const sensor_msgs::msg::PointCloud2::ConstSharedPtr points){
+//     std::lock_guard<std::mutex> lock(_points_mutex);
+//     _points = *points;
+//     if (!_pointsReceived){
+//         _pointsReceived = true;
+//     }
+//     RCLCPP_INFO(this->get_logger(),"Points Received");
+// }
+
+// void ssMapper::callback_pose(const geometry_msgs::msg::PoseStamped::ConstSharedPtr poseStamp){
+//     std::lock_guard<std::mutex> lock(_points_mutex);
+//     _position[0] = poseStamp->pose.position.x;
+//     _position[1] = poseStamp->pose.position.y;
+//     _position[2] = poseStamp->pose.position.z;
+
+//     _orientation.x() = poseStamp->pose.orientation.x;
+//     _orientation.y() = poseStamp->pose.orientation.y;
+//     _orientation.z() = poseStamp->pose.orientation.z;
+//     _orientation.w() = poseStamp->pose.orientation.w;
+
+//     if (!_poseReceived){
+//         // _positionStart = _position;
+//         _poseReceived = true;
+//     }
+
+//     RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
+//     _position[0],
+//     _position[1],
+//     _position[2]);
+//     // _position = _position - _positionStart; // for rosbag
+// }
+void ssMapper::synced_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &points,
+    const geometry_msgs::msg::PoseStamped::ConstSharedPtr &poseStamp)
+{
     std::lock_guard<std::mutex> lock(_points_mutex);
     _points = *points;
     if (!_pointsReceived){
         _pointsReceived = true;
     }
-}
+    RCLCPP_INFO(this->get_logger(),"Points Received");
 
-void ssMapper::callback_pose(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp){
-    std::lock_guard<std::mutex> lock(_points_mutex);
     _position[0] = poseStamp->pose.position.x;
     _position[1] = poseStamp->pose.position.y;
     _position[2] = poseStamp->pose.position.z;
@@ -72,7 +105,6 @@ void ssMapper::callback_pose(const geometry_msgs::msg::PoseStamped::SharedPtr po
     _orientation.w() = poseStamp->pose.orientation.w;
 
     if (!_poseReceived){
-        // _positionStart = _position;
         _poseReceived = true;
     }
 
@@ -80,7 +112,6 @@ void ssMapper::callback_pose(const geometry_msgs::msg::PoseStamped::SharedPtr po
     _position[0],
     _position[1],
     _position[2]);
-    // _position = _position - _positionStart; // for rosbag
 }
 
 void ssMapper::processPoints(){

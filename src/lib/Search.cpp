@@ -60,6 +60,7 @@ namespace Search{
     } 
     int i = 0;
     std::array<int,3> current = path[0];
+    std::cout << "Path cleaning: current obtained at start of path" << std::endl;
     bool foundGoal = false;
     while(!foundGoal) 
     {
