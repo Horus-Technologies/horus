@@ -21,6 +21,7 @@ generates local waypoints within local cost map.
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 #include <mutex>
@@ -34,7 +35,7 @@ public:
 
 private:
     void run();
-    void callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp);
+    void callback_drone(const nav_msgs::msg::Odometry::SharedPtr odometry);
     void callback_goal(const std_msgs::msg::UInt16MultiArray::SharedPtr goal);
     void visualizePath(std::vector<std::array<int,3>>& path);
     void visualizeCostMap();
@@ -47,9 +48,9 @@ private:
     nav_msgs::msg::Path _lastPath;
 
     // Subscriber members
-    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _subscriberDrone;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr _subscriberDrone;
     rclcpp::Subscription<std_msgs::msg::UInt16MultiArray>::SharedPtr _subscriberGoal;
-    geometry_msgs::msg::PoseStamped _lastPoseDrone;
+    nav_msgs::msg::Odometry _lastPoseDrone;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscriber;
 
     CostMap* _costMap;

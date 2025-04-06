@@ -24,7 +24,7 @@ ssGlobalPlanner::ssGlobalPlanner(CostMap* costMap)
 
     //goal indices need to be within costmap!!
     _goals.push_back({20,70,8});
-    _goals.push_back({60,60,8});
+    _goals.push_back({50,60,8});
     _goals.push_back({1,1,5});
     // _goals.push_back({79,5,5});
     // _goals.push_back({1,15,15});
@@ -47,9 +47,10 @@ void ssGlobalPlanner::run()
         if (distanceToGoalPoint < 0.05)
         {   
             _currentGoalIndex = _currentGoalIndex + 1;
-            if(_currentGoalIndex == _goals.size()-1)
+            if(_currentGoalIndex == _goals.size())
             {
-                _planComplete = true;
+                // _planComplete = true;
+                _currentGoalIndex = 0;
             }
         }
         std_msgs::msg::UInt16MultiArray goal;

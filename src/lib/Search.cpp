@@ -29,13 +29,16 @@ namespace Search{
       {
         break;
       }
+      // std::cout << "Current: " << costMap.unflatten(current)[0] << " " 
+      // << costMap.unflatten(current)[1] << " "
+      // << costMap.unflatten(current)[2] << std::endl;
       for (int next : costMap.emptyNeighbors(current))
       {
         if (came_from[next] == -1)
         {
           frontier.push(next);
           came_from[next] = current;
-        }
+        } 
       }
       count++;
     }
@@ -103,7 +106,7 @@ namespace Search{
       {
         path.erase(path.begin()+i+1, path.begin()+j); //because want the final voxel in path to be the goal
       }
-      else
+      else if(j - i != 1) //only erase if j had iterated at all
       {
         path.erase(path.begin()+i+1, path.begin()+j-1);
       }

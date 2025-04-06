@@ -7,24 +7,32 @@ ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
 {
 
     // Callback group
-    // auto exclusive_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-    // rclcpp::SubscriptionOptions options;
-    // options.callback_group = exclusive_group;
+    auto exclusive_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+    rclcpp::SubscriptionOptions options;
+    options.callback_group = exclusive_group;
     
     // Subscribing
-    rclcpp::QoS qos(rclcpp::KeepLast(1)); 
+    // rclcpp::QoS qos(rclcpp::KeepLast(1)); 
+    // qos.best_effort();
+    // _subscriberDrone = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+    // "/ap/pose/filtered", qos,
+    // [this](const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp) {
+    //     this->callback_drone(poseStamp);
+    // });
+
+    rclcpp::QoS qos(rclcpp::KeepLast(10)); 
     qos.best_effort();
-    _subscriberDrone = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-    "/ap/pose/filtered", qos,
-    [this](const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp) {
-        this->callback_drone(poseStamp);
-    });
+    _subscriberDrone = this->create_subscription<nav_msgs::msg::Odometry>(
+    "/odometry", qos,
+    [this](const nav_msgs::msg::Odometry::SharedPtr odometry) {
+        this->callback_drone(odometry);
+    },options);
 
     _subscriberGoal = this->create_subscription<std_msgs::msg::UInt16MultiArray>(
       "/global_goal", 10,
       [this](const std_msgs::msg::UInt16MultiArray::SharedPtr goal) {
           this->callback_goal(goal);
-      });
+      },options);
 
     // Publishing
     _publisher = this->create_publisher<nav_msgs::msg::Path>("waypoints", 10); // waypoints with stamped pose
@@ -41,72 +49,78 @@ void ssLocalPlanner::run()
   // _costMap->addObstacle({0.2, 4, 0}, {1, 4.2, 2});
   // Update _start
   _start = _costMap->getVoxelIndices({
-    _lastPoseDrone.pose.position.x,
-    _lastPoseDrone.pose.position.y,
-    _lastPoseDrone.pose.position.z
+    _lastPoseDrone.pose.pose.position.x,
+    _lastPoseDrone.pose.pose.position.y,
+    _lastPoseDrone.pose.pose.position.z
   });
   // temporarily until costmap frame is figured out
   if (_start[0] < 0) {_start[0] = 0;}
   if (_start[1] < 0) {_start[1] = 0;}
   if (_start[2] < 0) {_start[2] = 0;}
-
+  
+  RCLCPP_INFO(this->get_logger(), "Start: %d %d %d"
+  , _start[0], _start[1], _start[2]);
   std::unique_ptr<int[]> came_from = Search::runBreadthFirst(*_costMap, _start, _goal);
-
-  // Obtain path
-  std::array<int,3> current = _goal;
-  std::vector<std::array<int,3>> path;
-  while(current != _start)
-  {
-    path.push_back(current);
-    // RCLCPP_INFO(this->get_logger(), "Current: %d %d %d"
-    //   , current[0], current[1], current[2]);
-    std::array<int,3> prev = _costMap->unflatten(
-      came_from[_costMap->flatten(current)]);
-    current = prev;
+  if (came_from[_costMap->flatten(_goal)] == -1){
+    RCLCPP_WARN(this->get_logger(), "Search unable to find path to goal!");
+  }
+  else{
+    // Obtain path
+    std::array<int,3> current = _goal;
+    std::vector<std::array<int,3>> path;
+    while(current != _start)
+    {
+      path.push_back(current);
+      // RCLCPP_INFO(this->get_logger(), "Current: %d %d %d"
+      //   , current[0], current[1], current[2]);
+      std::array<int,3> prev = _costMap->unflatten(
+        came_from[_costMap->flatten(current)]);
+      current = prev;
+    }
+    path.push_back(_start); // append start voxel
     
-  }
-  path.push_back(_start); // append start voxel
+    std::reverse(path.begin(),path.end()); // start --> goal
+    visualizePath(path);
+    Search::cleanPath(*_costMap, path);
+    Search::cleanPath(*_costMap, path);
   
-  std::reverse(path.begin(),path.end()); // start --> goal
-  visualizePath(path);
-  Search::cleanPath(*_costMap, path);
-  Search::cleanPath(*_costMap, path);
-
-  _lastPath.poses.clear();
+    _lastPath.poses.clear();
+    
+    // compute point on _start voxel that intersects with first 
+    double totalPathTime = 0.0;
+    int i = 0;
+    std::array<int,3> prevVoxelIndices = path.front();
+    for(std::array<int,3> voxelIndices : path)
+    {
+      auto pose = geometry_msgs::msg::PoseStamped();
+      pose.pose.position.x = _costMap->getVoxelPosition(voxelIndices)[0];
+      pose.pose.position.y = _costMap->getVoxelPosition(voxelIndices)[1];
+      pose.pose.position.z = _costMap->getVoxelPosition(voxelIndices)[2];
+      pose.pose.orientation.x = 0.00081;
+      pose.pose.orientation.y = 0.000069;
+      pose.pose.orientation.z = 0.703855;
+      pose.pose.orientation.w = 0.710343;
+      if (i>0){
+        totalPathTime = totalPathTime + 1000 * sqrt(
+          pow(pose.pose.position.x - _costMap->getVoxelPosition(prevVoxelIndices)[0], 2) +
+          pow(pose.pose.position.y - _costMap->getVoxelPosition(prevVoxelIndices)[1], 2) +
+          pow(pose.pose.position.z - _costMap->getVoxelPosition(prevVoxelIndices)[2], 2));
+        pose.header.stamp.sec = static_cast<int32_t>(totalPathTime);
+      }
+      else{
+        pose.header.stamp.sec = 0.0;
+      }
   
-  // compute point on _start voxel that intersects with first 
-  double totalPathTime = 0.0;
-  int i = 0;
-  std::array<int,3> prevVoxelIndices = path.front();
-  for(std::array<int,3> voxelIndices : path)
-  {
-    auto pose = geometry_msgs::msg::PoseStamped();
-    pose.pose.position.x = _costMap->getVoxelPosition(voxelIndices)[0];
-    pose.pose.position.y = _costMap->getVoxelPosition(voxelIndices)[1];
-    pose.pose.position.z = _costMap->getVoxelPosition(voxelIndices)[2];
-    pose.pose.orientation.x = 0.00081;
-    pose.pose.orientation.y = 0.000069;
-    pose.pose.orientation.z = 0.703855;
-    pose.pose.orientation.w = 0.710343;
-    if (i>0){
-      totalPathTime = totalPathTime + 1000 * sqrt(
-        pow(pose.pose.position.x - _costMap->getVoxelPosition(prevVoxelIndices)[0], 2) +
-        pow(pose.pose.position.y - _costMap->getVoxelPosition(prevVoxelIndices)[1], 2) +
-        pow(pose.pose.position.z - _costMap->getVoxelPosition(prevVoxelIndices)[2], 2));
-      pose.header.stamp.sec = static_cast<int32_t>(totalPathTime);
+      _lastPath.poses.push_back(pose);
+      i++;
+      prevVoxelIndices = voxelIndices;
     }
-    else{
-      pose.header.stamp.sec = 0.0;
-    }
-
-    _lastPath.poses.push_back(pose);
-    i++;
-    prevVoxelIndices = voxelIndices;
+    
+    _lastPath.header.stamp = this->now();
+    _lastPath.header.frame_id = "odom";
+    _publisher->publish(_lastPath);
   }
-  
-  _lastPath.header.stamp = this->now();
-  _lastPath.header.frame_id = "odom";
-  _publisher->publish(_lastPath);
+
 }
 
 void ssLocalPlanner::visualizePath(std::vector<std::array<int,3>>& path)
@@ -152,14 +166,14 @@ void ssLocalPlanner::visualizePath(std::vector<std::array<int,3>>& path)
   _publisher_path_markers->publish(path_markers);
 }
 
-void ssLocalPlanner::callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp)
+void ssLocalPlanner::callback_drone(const nav_msgs::msg::Odometry::SharedPtr odometry)
 {
   // std::lock_guard<std::mutex> lock(_mutex);
-  _lastPoseDrone = *poseStamp;
-  // RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
-  // _lastPoseDrone.pose.position.x,
-  // _lastPoseDrone.pose.position.y,
-  // _lastPoseDrone.pose.position.z);
+  _lastPoseDrone = *odometry;
+  RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
+  _lastPoseDrone.pose.pose.position.x,
+  _lastPoseDrone.pose.pose.position.y,
+  _lastPoseDrone.pose.pose.position.z);
  
 }
 

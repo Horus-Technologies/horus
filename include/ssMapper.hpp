@@ -33,6 +33,7 @@ class ssMapper : public rclcpp::Node
         void callback_pose(const nav_msgs::msg::Odometry::SharedPtr poseStamp);
         void findBestPointsMatch(rclcpp::Time poseTime);
         void processPoints();
+        void inflateRecursivelyFromIndex(std::array<int,3> indices, int counter, int maxIterations);
         void visualizeCostMap();
         void transformBroadcast();
 

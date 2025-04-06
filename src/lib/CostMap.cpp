@@ -134,7 +134,7 @@ const std::vector<int> CostMap::emptyNeighbors(int index_flat) const
 }
 
 // Amanatides & Woo Algorithm to traverse line of sight segment
-bool CostMap::checkCollision(std::array<int,3>& voxelA, std::array<int,3>& voxelB) const
+bool CostMap::checkCollision(const std::array<int,3>& voxelA, const std::array<int,3>& voxelB) const
 {
     // Initialization
     Eigen::Vector3f A(getVoxelPosition(voxelA)[0],getVoxelPosition(voxelA)[1],getVoxelPosition(voxelA)[2]);
@@ -196,10 +196,11 @@ bool CostMap::checkCollision(std::array<int,3>& voxelA, std::array<int,3>& voxel
         }
 
         
-        if (count == 1000)
+        if (count == 10000)
         {
-            throw std::runtime_error("Voxel traversal during collision check taking too long (count = 1000)");
+            throw std::runtime_error("Voxel traversal during collision check taking too long (count = 10000)");
         }
+        // std::cout << " X Y Z: " << X << " " << Y << " " << Z << std::endl;
 
         if (getVoxelStateByIndices({X,Y,Z}) == VoxelState::OCCUPIED){
             // std::cout << "COLLISION FOUND" << std::endl;

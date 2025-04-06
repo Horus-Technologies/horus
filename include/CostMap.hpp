@@ -28,7 +28,7 @@ public:
     void setVoxelStateByPosition(const std::array<float,3>& position, const VoxelState& state);
     void addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_max);
     const std::vector<int> emptyNeighbors(int index_flat) const;
-    bool checkCollision(std::array<int,3>& voxelA, std::array<int,3>& voxelB) const;
+    bool checkCollision(const std::array<int,3>& voxelA, const std::array<int,3>& voxelB) const;
     std::array<float,3> getMaxPosition() const;
     float getScale() const { return _scale;} ;
     std::array<int,3> getDims()const{ return {_res,_res,_res};};

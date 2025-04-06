@@ -147,10 +147,7 @@ void ssMapper::processPoints(){
             _costMap->setVoxelStateByPosition({tempPoint[0], tempPoint[1], tempPoint[2]}, VoxelState::OCCUPIED);
             // set neighbors to be occupied also
             std::array<int,3> indices = _costMap->getVoxelIndices({tempPoint[0], tempPoint[1], tempPoint[2]});
-            std::vector<int> neighbors = _costMap->emptyNeighbors(_costMap->flatten(indices));
-            for (int i : neighbors){
-                _costMap->setVoxelStateByIndices(_costMap->unflatten(i), VoxelState::OCCUPIED);
-            }
+            inflateRecursivelyFromIndex(indices, 0, 2);
         }
     }
 
@@ -159,10 +156,17 @@ void ssMapper::processPoints(){
     RCLCPP_INFO(this->get_logger(),"Points processed in %f sec",duration.count());
 }
 
-// void ssMapper::inflateRecursively()
-// {
-
-// }
+void ssMapper::inflateRecursivelyFromIndex(std::array<int,3> indices, int counter, int maxIterations)
+{
+    if (counter > maxIterations){
+        return;
+    }
+    std::vector<int> neighbors = _costMap->emptyNeighbors(_costMap->flatten(indices));
+    for (int i : neighbors){
+        _costMap->setVoxelStateByIndices(_costMap->unflatten(i), VoxelState::OCCUPIED);
+        inflateRecursivelyFromIndex(_costMap->unflatten(i), counter+1, maxIterations);
+    }
+}
 
 void ssMapper::visualizeCostMap()
 {
