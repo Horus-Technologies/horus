@@ -3,7 +3,7 @@
 using namespace std::chrono_literals;
 
 ssMapper::ssMapper(CostMap* costMap)
-: Node("ssMapper"), _count(0), _costMap(costMap), _mapOffset({0,0,0})
+: Node("ssMapper"), _count(0), _costMap(costMap)
 {   
     // Callback group
     auto exclusive_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -31,10 +31,6 @@ ssMapper::ssMapper(CostMap* costMap)
 
     // Publishers
     _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
-
-    // Initialize the transform broadcaster
-    _map_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
-    _camera_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 }
 
 void ssMapper::run()
@@ -135,14 +131,14 @@ void ssMapper::processPoints(){
         tempPoint = R*tempPoint;
 
         // offset points so they are aligned with current robot position
-        tempPoint[0] += _position[0] + _mapOffset[0];
-        tempPoint[1] += _position[1] + _mapOffset[1];
-        tempPoint[2] += _position[2] + _mapOffset[2];
+        tempPoint[0] += _position[0];
+        tempPoint[1] += _position[1];
+        tempPoint[2] += _position[2];
 
         //ensuring that point is not going to be outside of costmap
         if (tempPoint[0] > 0 && tempPoint[0] < max_position[0]
             && tempPoint[1] > 0 && tempPoint[1] < max_position[1]
-            && tempPoint[2] > 0 && tempPoint[2] < max_position[2]){ 
+            && tempPoint[2] > 0.25 && tempPoint[2] < max_position[2]){ 
             // determine which voxel in costmap this point belongs to
             _costMap->setVoxelStateByPosition({tempPoint[0], tempPoint[1], tempPoint[2]}, VoxelState::OCCUPIED);
             // set neighbors to be occupied also
@@ -184,7 +180,7 @@ void ssMapper::visualizeCostMap()
             if (state == VoxelState::OCCUPIED)
             {
             visualization_msgs::msg::Marker marker;
-            marker.header.frame_id = "map";
+            marker.header.frame_id = "odom";
             marker.header.stamp = this->get_clock()->now();
             marker.ns = "markers";
             marker.id = markerId;
@@ -194,9 +190,9 @@ void ssMapper::visualizeCostMap()
 
             // Set the pose
             std::array<float, 3> pos = _costMap->getVoxelPosition({i,j,k});
-            marker.pose.position.x = pos[0];// - _xOffset;
-            marker.pose.position.y = pos[1];// - _yOffset;
-            marker.pose.position.z = pos[2];// - _zOffset;
+            marker.pose.position.x = pos[0];
+            marker.pose.position.y = pos[1];
+            marker.pose.position.z = pos[2];
             marker.pose.orientation.x = 0.0;
             marker.pose.orientation.y = 0.0;
             marker.pose.orientation.z = 0.0;
@@ -224,42 +220,5 @@ void ssMapper::visualizeCostMap()
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
     // RCLCPP_INFO(this->get_logger(),"Map markers publish finished in %f sec",duration.count());
-}
-
-void ssMapper::transformBroadcast()
-{
-    geometry_msgs::msg::TransformStamped t;
-    t.header.stamp = this->get_clock()->now();
-    t.header.frame_id = "odom";
-    t.child_frame_id = "map";
-
-    t.transform.translation.x = -_mapOffset[0];
-    t.transform.translation.y = -_mapOffset[1];
-    t.transform.translation.z = -_mapOffset[2];
-
-    Eigen::Quaternionf q(1,0,0,0);
-    t.transform.rotation.x = q.x();
-    t.transform.rotation.y = q.y();
-    t.transform.rotation.z = q.z();
-    t.transform.rotation.w = q.w();
-
-    // Send the transformation
-    _map_broadcaster->sendTransform(t);
-
-    // geometry_msgs::msg::TransformStamped t_camera;
-    // t_camera.header.stamp = this->get_clock()->now();
-    // t_camera.header.frame_id = "base_link";
-    // t_camera.child_frame_id = "realsense_d435/link/realsense_d435";
-
-    // t_camera.transform.translation.x = 0;
-    // t_camera.transform.translation.y = 0;
-    // t_camera.transform.translation.z = 0;
-    // t_camera.transform.rotation.x = q.x();
-    // t_camera.transform.rotation.y = q.y();
-    // t_camera.transform.rotation.z = q.z();
-    // t_camera.transform.rotation.w = q.w();
-
-    // // Send the transformation
-    // _camera_broadcaster->sendTransform(t_camera);
 }
     

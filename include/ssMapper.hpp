@@ -13,7 +13,7 @@ Mapper node for voxelization of a point cloud from Realsense Camera
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include "tf2_ros/transform_broadcaster.h"
+#include "tf2_ros/static_transform_broadcaster.h"
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include "geometry_msgs/msg/pose_stamped.hpp"
 
@@ -35,15 +35,13 @@ class ssMapper : public rclcpp::Node
         void processPoints();
         void inflateRecursivelyFromIndex(std::array<int,3> indices, int counter, int maxIterations);
         void visualizeCostMap();
-        void transformBroadcast();
 
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr _subscriber_points;
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr _subscriber_pose;
 
         rclcpp::TimerBase::SharedPtr _timer;
+        rclcpp::TimerBase::SharedPtr _timer_broadcast;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_map_markers;
-        std::unique_ptr<tf2_ros::TransformBroadcaster> _map_broadcaster;
-        std::unique_ptr<tf2_ros::TransformBroadcaster> _camera_broadcaster;
 
         CostMap* _costMap;
         sensor_msgs::msg::PointCloud2 _points;
@@ -56,7 +54,6 @@ class ssMapper : public rclcpp::Node
         double _poseStartTime;
         double _pointStartTime;
 
-        std::array<float,3> _mapOffset;
         std::mutex _points_mutex;
 };
 

@@ -11,7 +11,7 @@ using namespace std::chrono_literals;
 class demoBFS : public rclcpp::Node
 {
 public:
-    demoBFS() : Node("demoBFS"), _costMap(1), _start({0,0,0}), _goal({40,0,10})
+    demoBFS() : Node("demoBFS"), _costMap(1,{0,0,0}), _start({0,0,0}), _goal({40,0,10})
     {
         // Timer
         _timer = this->create_wall_timer(

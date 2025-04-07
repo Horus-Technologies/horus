@@ -2,7 +2,8 @@
 
 int main(int argc, char * argv[])
 {
-  CostMap costMap(0.25);
+  std::array<float,3> mapOffset({-2,-2,0});
+  CostMap costMap(0.25, mapOffset);
 
   rclcpp::init(argc, argv);
   auto mapper = std::make_shared<ssMapper>(&costMap);

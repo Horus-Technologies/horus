@@ -11,6 +11,7 @@
 #include "nav_msgs/msg/path.hpp"
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
+#include <cstdlib>
 
 class ssGlobalPlanner : public rclcpp::Node
 {
@@ -19,6 +20,7 @@ class ssGlobalPlanner : public rclcpp::Node
 
     private:
         void run();
+        void run_random();
         void callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp);
 
         rclcpp::TimerBase::SharedPtr _timer;

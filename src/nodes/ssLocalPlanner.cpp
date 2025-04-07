@@ -44,10 +44,7 @@ ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
     // Publisher function for path - on a timer callback
 void ssLocalPlanner::run()
 {
-  // std::lock_guard<std::mutex> lock(_mutex);
-  // _costMap->addObstacle({3.2, 5, 0}, {4, 5.2, 2});
-  // _costMap->addObstacle({0.2, 4, 0}, {1, 4.2, 2});
-  // Update _start
+  // Update _start with drone pose in map frame
   _start = _costMap->getVoxelIndices({
     _lastPoseDrone.pose.pose.position.x,
     _lastPoseDrone.pose.pose.position.y,
@@ -101,6 +98,7 @@ void ssLocalPlanner::run()
       pose.pose.orientation.z = 0.703855;
       pose.pose.orientation.w = 0.710343;
       if (i>0){
+        // compute timing for path
         totalPathTime = totalPathTime + 1000 * sqrt(
           pow(pose.pose.position.x - _costMap->getVoxelPosition(prevVoxelIndices)[0], 2) +
           pow(pose.pose.position.y - _costMap->getVoxelPosition(prevVoxelIndices)[1], 2) +
@@ -108,6 +106,7 @@ void ssLocalPlanner::run()
         pose.header.stamp.sec = static_cast<int32_t>(totalPathTime);
       }
       else{
+        // start time at 0 for first waypoint
         pose.header.stamp.sec = 0.0;
       }
   
@@ -169,12 +168,11 @@ void ssLocalPlanner::visualizePath(std::vector<std::array<int,3>>& path)
 void ssLocalPlanner::callback_drone(const nav_msgs::msg::Odometry::SharedPtr odometry)
 {
   // std::lock_guard<std::mutex> lock(_mutex);
-  _lastPoseDrone = *odometry;
-  RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
-  _lastPoseDrone.pose.pose.position.x,
-  _lastPoseDrone.pose.pose.position.y,
-  _lastPoseDrone.pose.pose.position.z);
- 
+  _lastPoseDrone = *odometry; // odom frame
+  // RCLCPP_INFO(this->get_logger(),"Drone Pose Received in odom frame: %f %f %f", 
+  // _lastPoseDrone.pose.pose.position.x,
+  // _lastPoseDrone.pose.pose.position.y,
+  // _lastPoseDrone.pose.pose.position.z);
 }
 
 void ssLocalPlanner::callback_goal(const std_msgs::msg::UInt16MultiArray::SharedPtr goal)

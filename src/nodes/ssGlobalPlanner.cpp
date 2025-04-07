@@ -20,15 +20,18 @@ ssGlobalPlanner::ssGlobalPlanner(CostMap* costMap)
     });
 
     _publisherGoal = this->create_publisher<std_msgs::msg::UInt16MultiArray>("/global_goal", 10);
-    _timer = this->create_wall_timer(20ms, std::bind(&ssGlobalPlanner::run, this));
+    _timer = this->create_wall_timer(20ms, std::bind(&ssGlobalPlanner::run_random, this));
 
     //goal indices need to be within costmap!!
-    _goals.push_back({20,70,8});
-    _goals.push_back({50,60,8});
-    _goals.push_back({1,1,5});
+    // _goals.push_back({20,70,8});
+    // _goals.push_back({50,60,8});
+    // _goals.push_back({1,1,5});
+
     // _goals.push_back({79,5,5});
     // _goals.push_back({1,15,15});
     // _goals.push_back({1,1,1});
+
+    _goals.push_back({1,1,6});
 }
 
 void ssGlobalPlanner::run()
@@ -60,7 +63,34 @@ void ssGlobalPlanner::run()
     }
 }
 
+void ssGlobalPlanner::run_random()
+{
+    std::array<int,3> goalPointVoxel = {_goals[0][0], _goals[0][1], _goals[0][2]};
+
+    float distanceToGoalPoint = sqrt(
+        pow(_lastPoseDrone.pose.position.x - _costMap->getVoxelPosition(goalPointVoxel)[0], 2) +
+        pow(_lastPoseDrone.pose.position.y - _costMap->getVoxelPosition(goalPointVoxel)[1], 2) +
+        pow(_lastPoseDrone.pose.position.z - _costMap->getVoxelPosition(goalPointVoxel)[2], 2));
+    if (distanceToGoalPoint < 0.05 || _costMap->getVoxelStateByIndices(goalPointVoxel) == VoxelState::OCCUPIED)
+    {   
+        _goals[0] = {rand() % 40, rand() % 80, rand() % 15};
+        goalPointVoxel = {_goals[0][0], _goals[0][1], _goals[0][2]};
+        while(_costMap->getVoxelStateByIndices(goalPointVoxel) == VoxelState::OCCUPIED){
+            _goals[0] = {rand() % 80, rand() % 80, rand() % 15};
+            goalPointVoxel = {_goals[0][0], _goals[0][1], _goals[0][2]};
+        } 
+    }
+    std_msgs::msg::UInt16MultiArray goal;
+    std::vector<uint16_t> goalData = _goals[_currentGoalIndex];
+    goal.data = goalData;
+    _publisherGoal->publish(goal);
+    RCLCPP_INFO(this->get_logger(),"Goal sent: %d %d %d", 
+    _goals[0][0],
+    _goals[0][1],
+    _goals[0][2]);
+}
+
 void ssGlobalPlanner::callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp)
 {
-  _lastPoseDrone = *poseStamp;
+  _lastPoseDrone = *poseStamp; // odom frame
 }
