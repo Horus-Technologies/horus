@@ -6,10 +6,22 @@
 #include <thread>
 
 
-CostMap::CostMap() : _scale(1.0), _voxels(), _mapOffset({0,0,0}){}
+CostMap::CostMap() : _scale(1.0), _mapOffset({0,0,0}){
+    std::array<VoxelState, _N> voxels;
+    std::fill(voxels.begin(), voxels.end(), VoxelState::EMPTY);
+    _blocks[_mapOffset] = voxels;
+}
 
-CostMap::CostMap(float scale, std::array<float, 3> mapOffset) : _scale(scale), _mapOffset({-2,-2,0}){
-    std::fill(_voxels.begin(), _voxels.end(), VoxelState::EMPTY);
+CostMap::CostMap(float scale) : _scale(scale), _mapOffset({0,0,0}){
+    std::array<VoxelState, _N> voxels;
+    std::fill(voxels.begin(), voxels.end(), VoxelState::EMPTY);
+    _blocks[_mapOffset] = voxels;
+}
+
+CostMap::CostMap(float scale, std::array<float, 3> mapOffset) : _scale(scale), _mapOffset(mapOffset){
+    std::array<VoxelState, _N> voxels;
+    std::fill(voxels.begin(), voxels.end(), VoxelState::EMPTY);
+    _blocks[_mapOffset] = voxels;
 }
 
 // flatten 3D grid
