@@ -191,3 +191,11 @@ WORKDIR /root
 
 # Inform user build is complete
 RUN echo "ROS 2 Humble, PX4, ORB-SLAM3 environment build complete."
+
+# === Install X11 Packages ===
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    x11-apps \
+    && rm -rf /var/lib/apt/lists/*
+
+# === Set an environment variable that your application might use to check for X11 ===
+ENV DISPLAY=:0
