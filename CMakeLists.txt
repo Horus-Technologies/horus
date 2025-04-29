@@ -24,6 +24,11 @@ find_package(Eigen3 REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+# find_package(Boost 1.82 REQUIRED COMPONENTS iostreams)
+set(CMAKE_MODULE_PATH "/usr/local/lib/cmake/OpenVDB" ${CMAKE_MODULE_PATH})
+find_package(OpenVDB REQUIRED)
+message(STATUS "Found OpenVDB: ${OpenVDB_INCLUDE_DIRS}")
+find_package(TBB REQUIRED)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
@@ -130,6 +135,23 @@ ament_target_dependencies(demoVoxelization
   Eigen3
 )
 
+add_executable(demoVisualizerOpenVDB
+  src/nodes/demoVisualizerOpenVDB.cpp
+)
+target_link_libraries(demoVisualizerOpenVDB
+  OpenVDB::openvdb
+  TBB::tbb
+)
+ament_target_dependencies(demoVisualizerOpenVDB
+  rclcpp
+  std_msgs
+  geometry_msgs
+  visualization_msgs
+  sensor_msgs
+  nav_msgs
+  Eigen3
+)
+
 
 find_package(ament_cmake_gtest REQUIRED)
 ament_add_gtest(tests test/tests.cpp src/lib/Voxel.cpp src/lib/CostMap.cpp)
@@ -145,6 +167,7 @@ install(TARGETS
   # trajectory_controller
   demoBFS
   demoVoxelization
+  demoVisualizerOpenVDB
   tests
   DESTINATION lib/${PROJECT_NAME}
 )
