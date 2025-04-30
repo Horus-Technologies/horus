@@ -73,10 +73,10 @@ void ssGlobalPlanner::run_random()
         pow(_lastPoseDrone.pose.position.z - _costMap->getVoxelPosition(goalPointVoxel)[2], 2));
     if (distanceToGoalPoint < 0.05 || _costMap->getVoxelStateByIndices(goalPointVoxel) == VoxelState::OCCUPIED)
     {   
-        _goals[0] = {rand() % 40, rand() % 40, rand() % 8};
+        _goals[0] = {rand() % 40, rand() % 80, rand() % 15};
         goalPointVoxel = {_goals[0][0], _goals[0][1], _goals[0][2]};
         while(_costMap->getVoxelStateByIndices(goalPointVoxel) == VoxelState::OCCUPIED){
-            _goals[0] = {rand() % 40, rand() % 40, rand() % 8};
+            _goals[0] = {rand() % 80, rand() % 80, rand() % 15};
             goalPointVoxel = {_goals[0][0], _goals[0][1], _goals[0][2]};
         } 
     }
@@ -84,10 +84,10 @@ void ssGlobalPlanner::run_random()
     std::vector<uint16_t> goalData = _goals[_currentGoalIndex];
     goal.data = goalData;
     _publisherGoal->publish(goal);
-    // RCLCPP_INFO(this->get_logger(),"Goal sent: %d %d %d", 
-    // _goals[0][0],
-    // _goals[0][1],
-    // _goals[0][2]);
+    RCLCPP_INFO(this->get_logger(),"Goal sent: %d %d %d", 
+    _goals[0][0],
+    _goals[0][1],
+    _goals[0][2]);
 }
 
 void ssGlobalPlanner::callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp)

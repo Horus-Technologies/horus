@@ -20,7 +20,6 @@ class CostMap
 {
 public:
     CostMap();
-    CostMap(float scale);
     CostMap(float scale, std::array<float, 3> mapOffset);
     VoxelState getVoxelStateByIndices(const std::array<int,3>& indices) const;
     std::array<float,3> getVoxelPosition(const std::array<int,3>& indices) const;
@@ -39,10 +38,9 @@ public:
     
 private:
 
-    static constexpr int _res = 16;
+    static constexpr int _res = 100;
     static constexpr int _N = _res*_res*_res;
-    // std::array<VoxelState, _N> _voxels;
-    std::unordered_map<std::array<int,3>, std::array<VoxelState, _N>> _blocks;
+    std::array<VoxelState, _N> _voxels;
     const float _scale; // length of each voxel edge
     std::array<float, 3> _mapOffset; // position offset from base (odom in our case) frame to costmap instance
 };

@@ -27,7 +27,7 @@ ssMapper::ssMapper(CostMap* costMap)
 
     // Timer
     _timer = this->create_wall_timer(
-        300ms, std::bind(&ssMapper::run, this));
+        500ms, std::bind(&ssMapper::run, this));
 
     // Publishers
     _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
@@ -43,7 +43,7 @@ void ssMapper::run()
 }
 
 void ssMapper::callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
-    // std::lock_guard<std::mutex> lock(_points_mutex);
+    std::lock_guard<std::mutex> lock(_points_mutex);
     _points_buffer.push_front(points);
 
     if (_points_buffer.size() > 20){
@@ -116,8 +116,8 @@ void ssMapper::findBestPointsMatch(rclcpp::Time poseTime){
 }
 
 void ssMapper::processPoints(){
-    std::lock_guard<std::mutex> lock(_points_mutex);
     auto startTimer = std::chrono::high_resolution_clock::now();
+    std::lock_guard<std::mutex> lock(_points_mutex);
     sensor_msgs::PointCloud2Iterator<float> iter_x(_points, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(_points, "y");
     sensor_msgs::PointCloud2Iterator<float> iter_z(_points, "z");
@@ -136,14 +136,14 @@ void ssMapper::processPoints(){
         tempPoint[2] += _position[2];
 
         //ensuring that point is not going to be outside of costmap
-        if (tempPoint[0] > _costMap->getMapOffset()[0] && tempPoint[0] < max_position[0]
-            && tempPoint[1] > _costMap->getMapOffset()[1] && tempPoint[1] < max_position[1]
-            && tempPoint[2] > _costMap->getMapOffset()[2] + 0.25 && tempPoint[2] < max_position[2]){ 
+        if (tempPoint[0] > 0 && tempPoint[0] < max_position[0]
+            && tempPoint[1] > 0 && tempPoint[1] < max_position[1]
+            && tempPoint[2] > 0.25 && tempPoint[2] < max_position[2]){ 
             // determine which voxel in costmap this point belongs to
             _costMap->setVoxelStateByPosition({tempPoint[0], tempPoint[1], tempPoint[2]}, VoxelState::OCCUPIED);
             // set neighbors to be occupied also
             std::array<int,3> indices = _costMap->getVoxelIndices({tempPoint[0], tempPoint[1], tempPoint[2]});
-            inflateRecursivelyFromIndex(indices, 0, 1);
+            inflateRecursivelyFromIndex(indices, 0, 2);
         }
     }
 
@@ -219,6 +219,6 @@ void ssMapper::visualizeCostMap()
     _publisher_map_markers->publish(marker_array);
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
-    RCLCPP_INFO(this->get_logger(),"Map markers publish finished in %f sec",duration.count());
+    // RCLCPP_INFO(this->get_logger(),"Map markers publish finished in %f sec",duration.count());
 }
     
