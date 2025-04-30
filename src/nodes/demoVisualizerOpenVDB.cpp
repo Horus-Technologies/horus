@@ -46,12 +46,20 @@ demoVisualizerOpenVDB()
 
         // Set a name for the grid (optional)
         _grid->setName("MyVoxelGrid");
+
+        // Create a new linear transform with the desired voxel size
+        openvdb::math::Transform::Ptr newTransform =
+            openvdb::math::Transform::createLinearTransform(2.0f);
+
+        // Set the grid's transform to the new transform
+        _grid->setTransform(newTransform);
     
     }
 private:
     void run()
     {
         processPoints();
+        visualizeCostMap();
     }
 
     void callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
@@ -84,15 +92,66 @@ private:
         openvdb::FloatGrid::Accessor accessor = _grid->getAccessor();
 
         // Set some voxels at specific coordinates
-        accessor.setValue(openvdb::Coord(1, 2, 3), 1.0f);
-        accessor.setValue(openvdb::Coord(2, 2, 3), 2.0f);
-        accessor.setValue(openvdb::Coord(3, 2, 3), 3.0f);
+        accessor.setValue(openvdb::Coord(1, 0, 0), 1.0f);
+        accessor.setValue(openvdb::Coord(2, 0, 0), 2.0f);
+        accessor.setValue(openvdb::Coord(3, 0, 0), 3.0f);
 
         // Access and print a value
         float value = accessor.getValue(openvdb::Coord(1, 2, 3));
         RCLCPP_INFO(this->get_logger(),"Value at (1,2,3): %f", value);
     }
 
+    void visualizeCostMap()
+    {
+        // Get the accessor for modifying voxel values
+        // openvdb::FloatGrid::Accessor accessor = _grid->getAccessor();
+
+        visualization_msgs::msg::MarkerArray marker_array;
+        int markerId = 0;
+
+        for (openvdb::FloatGrid::ValueOnCIter iter = _grid->cbeginValueOn(); iter; ++iter) {
+            openvdb::Coord ijk = iter.getCoord();
+            visualization_msgs::msg::Marker marker;
+            marker.header.frame_id = "map"; // or your frame id
+            marker.header.stamp = this->get_clock()->now();
+            marker.ns = "test_markers";
+            marker.id = markerId;
+            markerId++;
+            marker.type = visualization_msgs::msg::Marker::CUBE;
+            marker.action = visualization_msgs::msg::Marker::ADD;
+            
+            // Set the pose
+            // Convert VDB index coordinates to world coordinates
+            openvdb::Vec3d worldPos = _grid->indexToWorld(ijk);
+
+            marker.pose.position.x = worldPos.x();
+            marker.pose.position.y = worldPos.y();
+            marker.pose.position.z = worldPos.z();
+            marker.pose.orientation.x = 0.0;
+            marker.pose.orientation.y = 0.0;
+            marker.pose.orientation.z = 0.0;
+            marker.pose.orientation.w = 1.0;
+            
+            // Set the scale
+            openvdb::math::Transform::Ptr transform = _grid->transformPtr();
+            openvdb::math::Vec3d voxelSize = transform->voxelSize(); 
+            double scale = voxelSize.x();
+            marker.scale.x = scale;
+            marker.scale.y = scale;
+            marker.scale.z = scale;
+            
+            // Set the color
+            marker.color.r = 1.0f; // Red, decreasing with i
+            marker.color.g = 0.0f;          // Green, increasing with i
+            marker.color.b = 0.0f;
+            marker.color.a = 0.6f;
+            
+            // Add the marker to the array
+            marker_array.markers.push_back(marker);
+        }
+        _publisher_map_markers->publish(marker_array);
+    }
+    
     
 
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr _subscriber_points;
