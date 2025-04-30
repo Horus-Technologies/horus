@@ -21,12 +21,12 @@ demoVisualizerOpenVDB()
     {   
         // Subscribers
         _subscriber_points = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-            "/lidar/points", 10,
+            "/realsense/points", 10,
             [this](const sensor_msgs::msg::PointCloud2::SharedPtr points) {
                 this->callback_points(points);
             });
         _subscriber_pose = this->create_subscription<nav_msgs::msg::Odometry>(
-            "/ground_truth_pose", 10,
+            "/odometry", 10,
             [this](const nav_msgs::msg::Odometry::SharedPtr odom) {
                 this->callback_pose(odom);
             });
@@ -49,7 +49,7 @@ demoVisualizerOpenVDB()
 
         // Create a new linear transform with the desired voxel size
         openvdb::math::Transform::Ptr newTransform =
-            openvdb::math::Transform::createLinearTransform(2.0f);
+            openvdb::math::Transform::createLinearTransform(1.0f);
 
         // Set the grid's transform to the new transform
         _grid->setTransform(newTransform);
@@ -58,13 +58,18 @@ demoVisualizerOpenVDB()
 private:
     void run()
     {
-        processPoints();
-        visualizeCostMap();
+        if (_pointsReceived && _poseStartSet){
+            processPoints();
+            visualizeCostMap();
+        }
     }
 
     void callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
         _points = *points;
         _points.header.frame_id = "map";
+        if (!_pointsReceived){
+            _pointsReceived = true;
+        }
     }
 
     void callback_pose(const nav_msgs::msg::Odometry::SharedPtr odom){
@@ -85,8 +90,7 @@ private:
     }
 
     void processPoints(){
-        // RCLCPP_INFO(this->get_logger(), "Position: %f %f %f",
-        // _position[0], _position[1], _position[2]);
+        RCLCPP_INFO(this->get_logger(), "Processing");
 
         // Get the accessor for modifying voxel values
         openvdb::FloatGrid::Accessor accessor = _grid->getAccessor();
@@ -97,8 +101,41 @@ private:
         accessor.setValue(openvdb::Coord(3, 0, 0), 3.0f);
 
         // Access and print a value
-        float value = accessor.getValue(openvdb::Coord(1, 2, 3));
-        RCLCPP_INFO(this->get_logger(),"Value at (1,2,3): %f", value);
+        // float value = accessor.getValue(openvdb::Coord(1, 2, 3));
+        // RCLCPP_INFO(this->get_logger(),"Value at (1,2,3): %f", value);
+
+
+        RCLCPP_INFO(this->get_logger(), "Position: %f %f %f",
+        _position[0], _position[1], _position[2]);
+
+        sensor_msgs::PointCloud2Iterator<float> iter_x(_points, "x");
+        sensor_msgs::PointCloud2Iterator<float> iter_y(_points, "y");
+        sensor_msgs::PointCloud2Iterator<float> iter_z(_points, "z");
+
+        //loop through all points
+        for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
+            //rotate points so they are aligned with robot orientation
+            Eigen::Matrix3f R = _orientation.toRotationMatrix();
+            Eigen::Vector3f tempPoint(*iter_x, *iter_y, *iter_z);
+            Eigen::Matrix3f R_correction;
+            R_correction = Eigen::AngleAxisf(M_PI/6, Eigen::Vector3f::UnitY());
+            Eigen::Vector3f rotatedPoint = R*R_correction*tempPoint;
+            *iter_x = rotatedPoint[0];
+            *iter_y = rotatedPoint[1];
+            *iter_z = rotatedPoint[2];
+
+            // offset points so they are aligned with current robot position
+            *iter_x += _position[0];
+            *iter_y += _position[1]+ 3;
+            *iter_z += _position[2]+1;
+
+            openvdb::math::Vec3d worldPoint(*iter_x, *iter_y, *iter_z);
+            openvdb::Coord ijk = _grid->transformPtr()->worldToIndexCellCentered(worldPoint);
+            accessor.setValue(ijk, 1.0f);
+            RCLCPP_INFO(this->get_logger(),"Added voxel at: %d %d %d ", ijk.x(), ijk.y(), ijk.z());
+        }
+
+        // _publisher_points->publish(_points);
     }
 
     void visualizeCostMap()
@@ -112,7 +149,7 @@ private:
         for (openvdb::FloatGrid::ValueOnCIter iter = _grid->cbeginValueOn(); iter; ++iter) {
             openvdb::Coord ijk = iter.getCoord();
             visualization_msgs::msg::Marker marker;
-            marker.header.frame_id = "map"; // or your frame id
+            marker.header.frame_id = "odom"; // or your frame id
             marker.header.stamp = this->get_clock()->now();
             marker.ns = "test_markers";
             marker.id = markerId;
@@ -161,6 +198,7 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr _publisher_points;
 
     sensor_msgs::msg::PointCloud2 _points;
+    bool _pointsReceived = false;
     Eigen::Vector3f _position;
     Eigen::Vector3f _positionStart;
     Eigen::Quaternionf _orientation;
