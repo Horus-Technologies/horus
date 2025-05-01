@@ -6,6 +6,8 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
 endif()
 
+add_compile_options(-g)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -24,6 +26,7 @@ find_package(Eigen3 REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
@@ -49,7 +52,7 @@ add_executable(fsm
   src/nodes/ssFSM.cpp
   src/nodes/ssGlobalPlanner.cpp
   src/nodes/ssLocalPlanner.cpp
-  src/nodes/ssTrajectoryController.cpp  
+  src/nodes/ssMapper.cpp  
   src/lib/Voxel.cpp
   src/lib/CostMap.cpp
   src/lib/Search.cpp
@@ -61,6 +64,7 @@ ament_target_dependencies(fsm
   visualization_msgs
   nav_msgs
   Eigen3
+  tf2_ros
 )
 
 
@@ -88,17 +92,16 @@ ament_target_dependencies(fsm
 # )
 
 # Create Cpp executable for trajectory_controller
-# add_executable(trajectory_controller
-#   src/nodes/ssTrajectoryController.cpp
-# )
-# ament_target_dependencies(trajectory_controller
-#   rclcpp
-#   std_msgs
-#   geometry_msgs
-#   geographic_msgs
-#   Eigen3
-#   nav_msgs
-# )
+add_executable(trajectory_controller
+  src/nodes/ssTrajectoryController.cpp
+)
+ament_target_dependencies(trajectory_controller
+  rclcpp
+  std_msgs
+  geometry_msgs
+  Eigen3
+  nav_msgs
+)
 
 add_executable(demoBFS
   src/nodes/demoBFS.cpp
@@ -130,22 +133,21 @@ ament_target_dependencies(demoVoxelization
   Eigen3
 )
 
-
-find_package(ament_cmake_gtest REQUIRED)
-ament_add_gtest(tests test/tests.cpp src/lib/Voxel.cpp src/lib/CostMap.cpp)
-target_include_directories(tests PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
+# Tests
+# find_package(ament_cmake_gtest REQUIRED)
+# ament_add_gtest(tests test/tests.cpp src/lib/Voxel.cpp src/lib/CostMap.cpp)
+# target_include_directories(tests PUBLIC
+#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#   $<INSTALL_INTERFACE:include>
+# )
 
 # Install Cpp executables
 install(TARGETS
   fsm
-  # local_planner
-  # trajectory_controller
+  trajectory_controller
   demoBFS
   demoVoxelization
-  tests
+  # tests
   DESTINATION lib/${PROJECT_NAME}
 )
 

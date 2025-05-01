@@ -28,10 +28,11 @@ ssTrajectoryController::ssTrajectoryController()
 // Publisher function for path - on a timer callback
 void ssTrajectoryController::callback_command()
 { 
+  double now = _count * 0.01; // sec
   if (_pathAvail){
       // Get relative time from start of following
       float speedMultiplier = 0.75;
-      double now = _count * 0.01; // sec
+      
       double t = (now - _timeStartFollow)*speedMultiplier; // sec
       float segmentDuration = 0; //ms
       double s = 0;
@@ -94,7 +95,7 @@ void ssTrajectoryController::callback_command()
       //PID Algo
       Eigen::Vector3d Kp(1,1,1);
       Eigen::Vector3d Kd(0.5,0.5,0.5);
-      float Kp_yaw = 0.5;
+      float Kp_yaw = 0.75;
 
       Eigen::Vector3d d_desiredPose = desiredPose_vec - prevDesiredPose;
       Eigen::Vector3d d_currentPose = currentPoseDrone_vec - prevCurrentPose;
@@ -210,4 +211,12 @@ void ssTrajectoryController::callback_path(const nav_msgs::msg::Path::SharedPtr 
   else{
     _s_offset = 0.0;
   }
+}
+
+int main(int argc, char * argv[])
+{
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<ssTrajectoryController>());
+  rclcpp::shutdown();
+  return 0;
 }

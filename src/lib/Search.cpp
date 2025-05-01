@@ -1,43 +1,48 @@
 #include "Search.hpp"
 
 namespace Search{
-  PathMap runBreadthFirst(const CostMap& costMap, const Voxel* start, const Voxel* goal)
+  std::unique_ptr<int[]> runBreadthFirst(const CostMap& costMap, const std::array<int,3>& start, const std::array<int,3>& goal)
   {
     std::cout << "Breadth-first search starting" << std::endl;
     auto startTimer = std::chrono::high_resolution_clock::now();
-    VoxelsRef voxels = costMap.getVoxels();
+    int startFlat = costMap.flatten(start);
+    int goalFlat = costMap.flatten(goal);
 
-    std::queue<const Voxel*> frontier;
-    // const Voxel* start = &voxels[0][0][0];
-    frontier.push(start);
+    std::queue<int> frontier;
+    frontier.push(startFlat);
 
-    PathMap came_from;
-    came_from[start] = start;
+    int arraySize = std::pow(costMap.getDims()[0], 3);
+    std::unique_ptr<int[]> came_from = std::make_unique<int[]>(arraySize);
+
+    for (size_t i = 1; i < arraySize; ++i) {
+      came_from[i] = -1;
+    }
+    came_from[startFlat] = startFlat;
 
     int count = 0;
     while(!frontier.empty())
     {
-      const Voxel* current = frontier.front();
+      int current = frontier.front();
       frontier.pop();
 
-      if (current == goal)
+      if (current == goalFlat)
       {
         break;
       }
-
-      for (const Voxel* next : costMap.neighbors(current))
+      // std::cout << "Current: " << costMap.unflatten(current)[0] << " " 
+      // << costMap.unflatten(current)[1] << " "
+      // << costMap.unflatten(current)[2] << std::endl;
+      for (int next : costMap.emptyNeighbors(current))
       {
-        if (came_from.find(next) == came_from.end())
+        if (came_from[next] == -1)
         {
           frontier.push(next);
           came_from[next] = current;
-        }
+        } 
       }
       count++;
-      // "count = %d frontierSize = %ld",count, frontier.size());
     }
-    // RCLCPP_INFO(this->get_logger(),
-    //   "count = %d",count);
+
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
     std::cout << "Breadth-first search finished in " << duration.count() << " sec" << std::endl;
@@ -46,19 +51,20 @@ namespace Search{
 
 
   // Remove redundant waypoints from path
-  void cleanPath(const CostMap& costMap, std::vector<const Voxel*>& path) // start --> goal
+  void cleanPath(const CostMap& costMap, std::vector<std::array<int,3>>& path) // start --> goal
   { 
     std::cout << "Path cleaning started" << std::endl;
     
     auto startTimer = std::chrono::high_resolution_clock::now();
-    int i = 0;
-    const Voxel* current = path[0];
-    bool foundGoal = false;
     if (path.size() <= 1) 
     {
-      foundGoal = true;
       std::cout << "Path length (1) too short to clean." << std::endl;
+      return; //early exit
     } 
+    int i = 0;
+    std::array<int,3> current = path[0];
+    std::cout << "Path cleaning: current obtained at start of path" << std::endl;
+    bool foundGoal = false;
     while(!foundGoal) 
     {
       // check if there is a clear line of sight to the next voxel
@@ -69,7 +75,7 @@ namespace Search{
       int j = i+1;
       while (!foundFurthest)
       {
-        const Voxel* next = path[j];
+        std::array<int,3> next = path[j];
         
         if(next == path.back())
         {
@@ -100,7 +106,7 @@ namespace Search{
       {
         path.erase(path.begin()+i+1, path.begin()+j); //because want the final voxel in path to be the goal
       }
-      else
+      else if(j - i != 1) //only erase if j had iterated at all
       {
         path.erase(path.begin()+i+1, path.begin()+j-1);
       }
