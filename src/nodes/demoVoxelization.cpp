@@ -45,7 +45,6 @@ private:
     void run()
     {
         if (_pointsReceived && _poseStartSet){
-
             processPoints();
             visualizeCostMap();
         }

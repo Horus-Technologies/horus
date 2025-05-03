@@ -133,6 +133,22 @@ ament_target_dependencies(demoVoxelization
   Eigen3
 )
 
+add_executable(demoMapper
+  src/nodes/demoMapper.cpp
+  src/nodes/ssMapper.cpp
+  src/lib/Voxel.cpp
+  src/lib/CostMap.cpp
+)
+ament_target_dependencies(demoMapper
+  rclcpp
+  std_msgs
+  geometry_msgs
+  visualization_msgs
+  sensor_msgs
+  nav_msgs
+  Eigen3
+)
+
 # Tests
 # find_package(ament_cmake_gtest REQUIRED)
 # ament_add_gtest(tests test/tests.cpp src/lib/Voxel.cpp src/lib/CostMap.cpp)
@@ -147,6 +163,7 @@ install(TARGETS
   trajectory_controller
   demoBFS
   demoVoxelization
+  demoMapper
   # tests
   DESTINATION lib/${PROJECT_NAME}
 )

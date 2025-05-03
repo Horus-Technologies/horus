@@ -13,7 +13,7 @@ Mapper node for voxelization of a point cloud from Realsense Camera
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include "tf2_ros/static_transform_broadcaster.h"
+// #include "tf2_ros/static_transform_broadcaster.h"
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include "geometry_msgs/msg/pose_stamped.hpp"
 
