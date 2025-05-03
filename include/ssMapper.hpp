@@ -18,14 +18,14 @@ Mapper node for voxelization of a point cloud from Realsense Camera
 #include "geometry_msgs/msg/pose_stamped.hpp"
 
 #include <deque>
-
+#include <openvdb/openvdb.h>
 
 using namespace std::chrono_literals;
 
 class ssMapper : public rclcpp::Node
 {
     public:
-        ssMapper(CostMap* costMap);
+        ssMapper(openvdb::FloatGrid::Ptr& map);
 
     private:
         void run();
@@ -33,7 +33,7 @@ class ssMapper : public rclcpp::Node
         void callback_pose(const nav_msgs::msg::Odometry::SharedPtr poseStamp);
         void findBestPointsMatch(rclcpp::Time poseTime);
         void processPoints();
-        void inflateRecursivelyFromIndex(std::array<int,3> indices, int counter, int maxIterations);
+        // void inflateRecursivelyFromIndex(std::array<int,3> indices, int counter, int maxIterations);
         void visualizeCostMap();
 
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr _subscriber_points;
@@ -43,7 +43,7 @@ class ssMapper : public rclcpp::Node
         rclcpp::TimerBase::SharedPtr _timer_broadcast;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_map_markers;
 
-        CostMap* _costMap;
+        openvdb::FloatGrid::Ptr _map;
         sensor_msgs::msg::PointCloud2 _points;
         Eigen::Vector3f _position;
         Eigen::Quaternionf _orientation;

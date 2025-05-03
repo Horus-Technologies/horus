@@ -27,6 +27,10 @@ find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
+set(CMAKE_MODULE_PATH "/usr/local/lib/cmake/OpenVDB" ${CMAKE_MODULE_PATH})
+find_package(OpenVDB REQUIRED)
+message(STATUS "Found OpenVDB: ${OpenVDB_INCLUDE_DIRS}")
+find_package(TBB REQUIRED)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
@@ -48,24 +52,24 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 # Include Cpp "include" directory
 include_directories(include)
 
-add_executable(fsm 
-  src/nodes/ssFSM.cpp
-  src/nodes/ssGlobalPlanner.cpp
-  src/nodes/ssLocalPlanner.cpp
-  src/nodes/ssMapper.cpp  
-  src/lib/Voxel.cpp
-  src/lib/CostMap.cpp
-  src/lib/Search.cpp
-)
-ament_target_dependencies(fsm
-  rclcpp
-  std_msgs
-  geometry_msgs
-  visualization_msgs
-  nav_msgs
-  Eigen3
-  tf2_ros
-)
+# add_executable(fsm 
+#   src/nodes/ssFSM.cpp
+#   src/nodes/ssGlobalPlanner.cpp
+#   src/nodes/ssLocalPlanner.cpp
+#   src/nodes/ssMapper.cpp  
+#   src/lib/Voxel.cpp
+#   src/lib/CostMap.cpp
+#   src/lib/Search.cpp
+# )
+# ament_target_dependencies(fsm
+#   rclcpp
+#   std_msgs
+#   geometry_msgs
+#   visualization_msgs
+#   nav_msgs
+#   Eigen3
+#   tf2_ros
+# )
 
 
 # Create Cpp executable for local_planner
@@ -139,6 +143,10 @@ add_executable(demoMapper
   src/lib/Voxel.cpp
   src/lib/CostMap.cpp
 )
+target_link_libraries(demoMapper
+  OpenVDB::openvdb
+  TBB::tbb
+)
 ament_target_dependencies(demoMapper
   rclcpp
   std_msgs
@@ -159,10 +167,10 @@ ament_target_dependencies(demoMapper
 
 # Install Cpp executables
 install(TARGETS
-  fsm
-  trajectory_controller
-  demoBFS
-  demoVoxelization
+  # fsm
+  # trajectory_controller
+  # demoBFS
+  # demoVoxelization
   demoMapper
   # tests
   DESTINATION lib/${PROJECT_NAME}

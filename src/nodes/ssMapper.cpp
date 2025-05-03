@@ -2,8 +2,8 @@
 
 using namespace std::chrono_literals;
 
-ssMapper::ssMapper(CostMap* costMap)
-: Node("ssMapper"), _count(0), _costMap(costMap)
+ssMapper::ssMapper(openvdb::FloatGrid::Ptr& map)
+: Node("ssMapper"), _count(0), _map(map)
 {   
     // Callback group
     auto exclusive_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -118,11 +118,15 @@ void ssMapper::findBestPointsMatch(rclcpp::Time poseTime){
 void ssMapper::processPoints(){
     auto startTimer = std::chrono::high_resolution_clock::now();
     std::lock_guard<std::mutex> lock(_points_mutex);
+
+    // Get the accessor for modifying voxel values
+    openvdb::FloatGrid::Accessor accessor = _map->getAccessor();
+
     sensor_msgs::PointCloud2Iterator<float> iter_x(_points, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(_points, "y");
     sensor_msgs::PointCloud2Iterator<float> iter_z(_points, "z");
     Eigen::Matrix3f R = _orientation.toRotationMatrix();
-    std::array<float,3> max_position = _costMap->getMaxPosition();
+
     //loop through all points
     for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
         //rotate points so they are aligned with robot orientation
@@ -135,16 +139,10 @@ void ssMapper::processPoints(){
         tempPoint[1] += _position[1];
         tempPoint[2] += _position[2];
 
-        //ensuring that point is not going to be outside of costmap
-        if (tempPoint[0] > 0 && tempPoint[0] < max_position[0]
-            && tempPoint[1] > 0 && tempPoint[1] < max_position[1]
-            && tempPoint[2] > 0.25 && tempPoint[2] < max_position[2]){ 
-            // determine which voxel in costmap this point belongs to
-            _costMap->setVoxelStateByPosition({tempPoint[0], tempPoint[1], tempPoint[2]}, VoxelState::OCCUPIED);
-            // set neighbors to be occupied also
-            std::array<int,3> indices = _costMap->getVoxelIndices({tempPoint[0], tempPoint[1], tempPoint[2]});
-            inflateRecursivelyFromIndex(indices, 0, 2);
-        }
+        openvdb::math::Vec3d worldPoint(*iter_x, *iter_y, *iter_z);
+        openvdb::Coord ijk = _map->transformPtr()->worldToIndexCellCentered(worldPoint);
+        accessor.setValue(ijk, 1.0f);
+        // RCLCPP_INFO(this->get_logger(),"Added voxel at: %d %d %d ", ijk.x(), ijk.y(), ijk.z());
     }
 
     auto endTimer = std::chrono::high_resolution_clock::now();
@@ -152,17 +150,17 @@ void ssMapper::processPoints(){
     RCLCPP_INFO(this->get_logger(),"Points processed in %f sec",duration.count());
 }
 
-void ssMapper::inflateRecursivelyFromIndex(std::array<int,3> indices, int counter, int maxIterations)
-{
-    if (counter > maxIterations){
-        return;
-    }
-    std::vector<int> neighbors = _costMap->emptyNeighbors(_costMap->flatten(indices));
-    for (int i : neighbors){
-        _costMap->setVoxelStateByIndices(_costMap->unflatten(i), VoxelState::OCCUPIED);
-        inflateRecursivelyFromIndex(_costMap->unflatten(i), counter+1, maxIterations);
-    }
-}
+// void ssMapper::inflateRecursivelyFromIndex(std::array<int,3> indices, int counter, int maxIterations)
+// {
+//     if (counter > maxIterations){
+//         return;
+//     }
+//     std::vector<int> neighbors = _costMap->emptyNeighbors(_costMap->flatten(indices));
+//     for (int i : neighbors){
+//         _costMap->setVoxelStateByIndices(_costMap->unflatten(i), VoxelState::OCCUPIED);
+//         inflateRecursivelyFromIndex(_costMap->unflatten(i), counter+1, maxIterations);
+//     }
+// }
 
 void ssMapper::visualizeCostMap()
 {
@@ -170,51 +168,45 @@ void ssMapper::visualizeCostMap()
     visualization_msgs::msg::MarkerArray marker_array;
     int markerId = 0;
 
-    for (int i = 0; i < _costMap->getDims()[0]; ++i)
-    {
-        for (int j = 0; j < _costMap->getDims()[1]; ++j)
-        {
-        for (int k = 0; k < _costMap->getDims()[2]; ++k)
-        {
-            VoxelState state = _costMap->getVoxelStateByIndices({i,j,k});
-            if (state == VoxelState::OCCUPIED)
-            {
-            visualization_msgs::msg::Marker marker;
-            marker.header.frame_id = "odom";
-            marker.header.stamp = this->get_clock()->now();
-            marker.ns = "markers";
-            marker.id = markerId;
-            markerId++;
-            marker.type = visualization_msgs::msg::Marker::CUBE;
-            marker.action = visualization_msgs::msg::Marker::ADD;
+    for (openvdb::FloatGrid::ValueOnCIter iter = _map->cbeginValueOn(); iter; ++iter) {
+        openvdb::Coord ijk = iter.getCoord();
+        visualization_msgs::msg::Marker marker;
+        marker.header.frame_id = "odom"; // or your frame id
+        marker.header.stamp = this->get_clock()->now();
+        marker.ns = "test_markers";
+        marker.id = markerId;
+        markerId++;
+        marker.type = visualization_msgs::msg::Marker::CUBE;
+        marker.action = visualization_msgs::msg::Marker::ADD;
+        
+        // Set the pose
+        // Convert VDB index coordinates to world coordinates
+        openvdb::Vec3d worldPos = _map->indexToWorld(ijk);
 
-            // Set the pose
-            std::array<float, 3> pos = _costMap->getVoxelPosition({i,j,k});
-            marker.pose.position.x = pos[0];
-            marker.pose.position.y = pos[1];
-            marker.pose.position.z = pos[2];
-            marker.pose.orientation.x = 0.0;
-            marker.pose.orientation.y = 0.0;
-            marker.pose.orientation.z = 0.0;
-            marker.pose.orientation.w = 1.0;
-            
-            // Set the scale
-            const double scale = _costMap->getScale();
-            marker.scale.x = scale;
-            marker.scale.y = scale;
-            marker.scale.z = scale;
-
-            // Set the color
-            marker.color.r = 1.0f;
-            marker.color.g = 0.0f;       
-            marker.color.b = 0.0f;
-            marker.color.a = 0.5f;
-
-            // Add the marker to the array
-            marker_array.markers.push_back(marker);
-            }
-        }
-        }
+        marker.pose.position.x = worldPos.x();
+        marker.pose.position.y = worldPos.y();
+        marker.pose.position.z = worldPos.z();
+        marker.pose.orientation.x = 0.0;
+        marker.pose.orientation.y = 0.0;
+        marker.pose.orientation.z = 0.0;
+        marker.pose.orientation.w = 1.0;
+        
+        // Set the scale
+        openvdb::math::Transform::Ptr transform = _map->transformPtr();
+        openvdb::math::Vec3d voxelSize = transform->voxelSize(); 
+        double scale = voxelSize.x();
+        marker.scale.x = scale;
+        marker.scale.y = scale;
+        marker.scale.z = scale;
+        
+        // Set the color
+        marker.color.r = 1.0f; // Red, decreasing with i
+        marker.color.g = 0.0f;          // Green, increasing with i
+        marker.color.b = 0.0f;
+        marker.color.a = 0.6f;
+        
+        // Add the marker to the array
+        marker_array.markers.push_back(marker);
     }
     _publisher_map_markers->publish(marker_array);
     auto endTimer = std::chrono::high_resolution_clock::now();
