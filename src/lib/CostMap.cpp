@@ -5,24 +5,92 @@
 #include <iostream>
 #include <thread>
 
+using ChunkKey = std::array<int, 3>;
 
-CostMap::CostMap() : _scale(1.0), _voxels(), _mapOffset({0,0,0}){}
+CostMap::CostMap() : _scale(1.0), _mapOffset({0,0,0}){
+    Chunk chunk(_res);
+    _map[_mapOffset] = chunk;
+}
 
 CostMap::CostMap(float scale, std::array<float, 3> mapOffset) : _scale(scale), _mapOffset({-2,-2,0}){
-    std::fill(_voxels.begin(), _voxels.end(), VoxelState::EMPTY);
+    Chunk chunk(_res);
+    _map[_mapOffset] = chunk;
 }
 
-// flatten 3D grid
-int CostMap::flatten(const std::array<int,3>& indices) const
+// Convert from world coordinates to voxel indices
+std::array<int,3> CostMap::worldToIndex(const std::array<float,3>& position) const
 {
-    return indices[0] + _res*indices[1] + _res*_res*indices[2];
+    return {
+        std::round((position[0]-_mapOffset[0])/_scale - 0.5),
+        std::round((position[1]-_mapOffset[1])/_scale - 0.5),
+        std::round((position[2]-_mapOffset[2])/_scale - 0.5)
+    };
 }
 
-// unflatten 3D grid
-std::array<int,3> CostMap::unflatten(int i) const
+// Convert from world coordinates to voxel indices
+std::array<float,3> CostMap::indexToWorld(const std::array<int,3>& indices) const
 {
-    return {i % _res, (i / _res) % _res, i / (_res*_res)}; 
+    // convert to base frame position before returning
+    return {
+        (indices[0]+0.5)*_scale + _mapOffset[0],
+        (indices[1]+0.5)*_scale + _mapOffset[1],
+        (indices[2]+0.5)*_scale + _mapOffset[2]
+    };
 }
+
+// Returns VoxelState at the world coordinates provided
+VoxelState CostMap::getVoxelState(const std::array<float,3>& position) const
+{
+    std::array<int,3> indices = worldToIndex(position);
+
+    // Obtain chunk indices
+    int chunk_x = indices[0] / _res;
+    int chunk_y = indices[1] / _res;
+    int chunk_z = indices[2] / _res;
+
+    // Check if chunk exists
+    if (_map.find({chunk_x, chunk_y, chunk_z}) != _map.end()){
+        // Obtain local indices within chunk
+        int local_x = indices[0] % _res;
+        int local_y = indices[1] % _res;
+        int local_z = indices[2] % _res;
+
+        Chunk* chunk = _map[{chunk_x,chunk_y,chunk_z}];
+        int local_flat = chunk->flatten({local_x, local_y, local_z});
+        return chunk->getVoxelState(local_flat);
+    }
+    else{ // chunk doesn't exist
+        return VoxelState::UNKNOWN;
+    }
+}
+
+// Returns VoxelState at the world coordinates provided
+void CostMap::setVoxelState(const std::array<float,3>& position, VoxelState state) const
+{
+    std::array<int,3> indices = worldToIndex(position);
+
+    // Obtain chunk indices
+    int chunk_x = indices[0] / _res;
+    int chunk_y = indices[1] / _res;
+    int chunk_z = indices[2] / _res;
+
+    if (_map.find({chunk_x, chunk_y, chunk_z}) == _map.end()){
+        // chunk doesn't exist, so make new chunk
+        Chunk new_chunk(_res);
+        _map[{chunk_x,chunk_y,chunk_z}] = new_chunk;
+    }
+
+    // Obtain local indices within chunk
+    int local_x = indices[0] % _res;
+    int local_y = indices[1] % _res;
+    int local_z = indices[2] % _res;
+    Chunk* chunk = _map[{chunk_x,chunk_y,chunk_z}];
+    int local_flat = chunk->flatten({local_x, local_y, local_z});
+    chunk->setVoxelState(local_flat) = state;
+}
+
+
+
 
 VoxelState CostMap::getVoxelStateByIndices(const std::array<int,3>& indices) const
 {
@@ -212,7 +280,8 @@ bool CostMap::checkCollision(const std::array<int,3>& voxelA, const std::array<i
         }
         // std::cout << " X Y Z: " << X << " " << Y << " " << Z << std::endl;
 
-        if (getVoxelStateByIndices({X,Y,Z}) == VoxelState::OCCUPIED){
+        VoxelState voxelState = 
+        if (voxelState == VoxelState::OCCUPIED){
             // std::cout << "COLLISION FOUND" << std::endl;
             return true;
         }

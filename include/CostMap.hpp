@@ -1,46 +1,40 @@
 #ifndef COST_MAP_H
 #define COST_MAP_H
 
-
-#include "Voxel.hpp"
+#include "Chunk.hpp"
 #include <vector>
 #include <memory>
-#include <unordered_set>
+#include <unordered_map>
 #include <iostream>
 #include <mutex>
 
-enum VoxelState
-{
-    UNKNOWN,
-    EMPTY,
-    OCCUPIED
-};
+using ChunkKey = std::array<int, 3>;
 
 class CostMap
 {
 public:
     CostMap();
     CostMap(float scale, std::array<float, 3> mapOffset);
-    VoxelState getVoxelStateByIndices(const std::array<int,3>& indices) const;
-    std::array<float,3> getVoxelPosition(const std::array<int,3>& indices) const;
-    std::array<int,3> getVoxelIndices(const std::array<float,3>& position) const;
-    void setVoxelStateByIndices(const std::array<int,3>& indices, const VoxelState& state);
-    void setVoxelStateByPosition(const std::array<float,3>& position, const VoxelState& state);
+    VoxelState getVoxelState(const std::array<float,3>& position) const;
+    void setVoxelState(const std::array<float,3>& position, const VoxelState& state) const;
     void addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_max);
     const std::vector<int> emptyNeighbors(int index_flat) const;
     bool checkCollision(const std::array<int,3>& voxelA, const std::array<int,3>& voxelB) const;
-    std::array<float,3> getMaxPosition() const;
+
+    // VoxelState getVoxelStateByIndices(const std::array<int,3>& indices) const;
+    // std::array<float,3> getVoxelPosition(const std::array<int,3>& indices) const;
+    // std::array<int,3> getVoxelIndices(const std::array<float,3>& position) const;
+    // void setVoxelStateByIndices(const std::array<int,3>& indices, const VoxelState& state);
+    // void setVoxelStateByPosition(const std::array<float,3>& position, const VoxelState& state);
+    // std::array<float,3> getMaxPosition() const;
     float getScale() const { return _scale;} ;
     std::array<int,3> getDims()const{ return {_res,_res,_res};};
     std::array<float,3> getMapOffset() const{return _mapOffset;};
-    int flatten(const std::array<int,3>& indices) const;
-    std::array<int,3> unflatten(int i) const;
+
     
 private:
-
-    static constexpr int _res = 100;
-    static constexpr int _N = _res*_res*_res;
-    std::array<VoxelState, _N> _voxels;
+    static constexp int _res = 16;
+    std::unordered_map<ChunkKey, Chunk> _map;
     const float _scale; // length of each voxel edge
     std::array<float, 3> _mapOffset; // position offset from base (odom in our case) frame to costmap instance
 };
