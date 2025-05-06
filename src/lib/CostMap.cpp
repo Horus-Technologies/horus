@@ -2,29 +2,25 @@
 
 using ChunkKey = std::array<int, 3>;
 
-CostMap::CostMap() : _scale(1.0), _mapOffset({0,0,0}){
+CostMap::CostMap() : _scale(1.0){
     Chunk chunk(_res);
-    std::array<int, 3> intKey = {static_cast<int>(_mapOffset[0]),
-        static_cast<int>(_mapOffset[1]),
-        static_cast<int>(_mapOffset[2])};
-    _map.emplace(intKey,chunk);
+    std::array<int, 3> originKey = {0,0,0};
+    _map.emplace(originKey,chunk);
 }
 
-CostMap::CostMap(float scale, std::array<float, 3> mapOffset) : _scale(scale), _mapOffset(mapOffset){
+CostMap::CostMap(float scale) : _scale(scale){
     Chunk chunk(_res);
-    std::array<int, 3> intKey = {static_cast<int>(_mapOffset[0]),
-        static_cast<int>(_mapOffset[1]),
-        static_cast<int>(_mapOffset[2])};
-    _map.emplace(intKey,chunk);
+    std::array<int, 3> originKey = {0,0,0};
+    _map.emplace(originKey,chunk);
 }
 
 // Convert from world coordinates to global voxel indices
 std::array<int,3> CostMap::worldToGlobal(const std::array<float,3>& position) const
 {
     return {
-        std::round((position[0]-_mapOffset[0])/_scale - 0.5),
-        std::round((position[1]-_mapOffset[1])/_scale - 0.5),
-        std::round((position[2]-_mapOffset[2])/_scale - 0.5)
+        std::floor((position[0])/_scale),
+        std::floor((position[1])/_scale),
+        std::floor((position[2])/_scale)
     };
 }
 
@@ -33,9 +29,9 @@ std::array<float,3> CostMap::globalToWorld(const std::array<int,3>& global_indic
 {
     // convert to base frame position before returning
     return {
-        (global_indices[0]+0.5)*_scale + _mapOffset[0],
-        (global_indices[1]+0.5)*_scale + _mapOffset[1],
-        (global_indices[2]+0.5)*_scale + _mapOffset[2]
+        (global_indices[0]+0.5)*_scale,
+        (global_indices[1]+0.5)*_scale,
+        (global_indices[2]+0.5)*_scale
     };
 }
 
@@ -43,15 +39,15 @@ std::array<float,3> CostMap::globalToWorld(const std::array<int,3>& global_indic
 std::pair<std::array<int,3>,std::array<int,3>> CostMap::globalToLocal(const std::array<int,3>& global_indices) const
 {
     std::array<int,3> chunk_indices = {
-        global_indices[0] / _res,
-        global_indices[1] / _res,
-        global_indices[2] / _res
+        std::floor(static_cast<double>(global_indices[0]) / _res),
+        std::floor(static_cast<double>(global_indices[1]) / _res),
+        std::floor(static_cast<double>(global_indices[2]) / _res)
     };
 
     std::array<int,3> local_indices = {
-        global_indices[0] % _res,
-        global_indices[1] % _res,
-        global_indices[2] % _res
+        global_indices[0] - chunk_indices[0]*_res,
+        global_indices[1] - chunk_indices[1]*_res,
+        global_indices[2] - chunk_indices[2]*_res
     };
 
     return {chunk_indices, local_indices};
@@ -128,10 +124,11 @@ void CostMap::addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_m
     std::array<int,3> xyz_min_aligned_ind = worldToGlobal(xyz_min_aligned);
     std::array<int,3> xyz_max_aligned_ind = worldToGlobal(xyz_max_aligned);
 
-    for (int i = xyz_min_aligned_ind[0]; i <= xyz_max_aligned_ind[0]; i++){
-        for (int j = xyz_min_aligned_ind[1]; j <= xyz_max_aligned_ind[1]; j++){
-            for (int k = xyz_min_aligned_ind[2]; k <= xyz_max_aligned_ind[2]; k++){
+    for (int i = xyz_min_aligned_ind[0]; i < xyz_max_aligned_ind[0]; i++){
+        for (int j = xyz_min_aligned_ind[1]; j < xyz_max_aligned_ind[1]; j++){
+            for (int k = xyz_min_aligned_ind[2]; k < xyz_max_aligned_ind[2]; k++){
                 setVoxelState(globalToWorld({i,j,k}), VoxelState::OCCUPIED);
+                // std::cout << "Voxel added at " << i << "," << j << "," << k << std::endl;
             }
         }
     }
@@ -322,4 +319,15 @@ void CostMap::forEachVoxel(const std::function<void(float x, float y, float z)>&
             }
         }
     }
+}
+
+std::vector<std::array<int,3>> CostMap::getChunkIndices() const
+{
+    std::vector<std::array<int,3>> chunks;
+    for (const auto& pair : _map){
+        const ChunkKey chunk_indices = pair.first;
+        chunks.push_back(chunk_indices);
+    }
+
+    return chunks;
 }

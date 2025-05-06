@@ -33,7 +33,7 @@ class CostMap
 {
 public:
     CostMap();
-    CostMap(float scale, std::array<float, 3> mapOffset);
+    CostMap(float scale);
     std::array<int,3> worldToGlobal(const std::array<float,3>& position) const;
     std::array<float,3> globalToWorld(const std::array<int,3>& global_indices) const;
     std::pair<std::array<int,3>,std::array<int,3>> globalToLocal(const std::array<int,3>& global_indices) const;
@@ -45,17 +45,15 @@ public:
     void addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_max);
     void forEachVoxel(const std::function<void(float x, float y, float z)>& func);
 
+    std::vector<std::array<int,3>> getChunkIndices() const;
+
     float getScale() const { return _scale;} ;
-    std::array<int,3> getDims()const{ return {_res,_res,_res};};
-    std::array<float,3> getMapOffset() const{return _mapOffset;};
-    // std::unordered_map<ChunkKey, Chunk>* getMap() const{return &_map;};
     int getNumChunks() const {return _map.size();};
 
 private:
     static constexpr int _res = 16;
     std::unordered_map<ChunkKey, Chunk> _map;
     const float _scale; // length of each voxel edge
-    std::array<float, 3> _mapOffset; // position offset from base (odom in our case) frame to costmap instance
 };
 
 #endif

@@ -206,6 +206,6 @@ void ssMapper::visualizeCostMap()
     _publisher_map_markers->publish(marker_array);
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
-    // RCLCPP_INFO(this->get_logger(),"Map markers publish finished in %f sec",duration.count());
+    RCLCPP_INFO(this->get_logger(),"Map markers publish finished in %f sec",duration.count());
 }
     
