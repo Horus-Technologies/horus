@@ -88,7 +88,6 @@ VoxelState CostMap::getVoxelState(const std::array<float,3>& position) const
         return chunk_ptr->getVoxelState(local);
     }
     else{ // chunk doesn't exist
-        std::cout << "Chunk not found. VoxelState set to UNKNOWN" << std::endl;
         return VoxelState::UNKNOWN;
     }
 }
