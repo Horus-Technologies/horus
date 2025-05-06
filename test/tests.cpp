@@ -1,18 +1,33 @@
 #include <gtest/gtest.h>
 #include "CostMap.hpp"
 
-TEST(CostMapTests, CostMapStuff)
+TEST(CostMapTests, DefaultConstructor)
 {
-    std::array<float,3> mapOffset({0,0,0});
-    CostMap costMap(1, mapOffset);
+    CostMap costMap;
     std::array<float,3> xyz_min = {1, 1, 1};
     std::array<float,3> xyz_max {4, 4, 4};
     costMap.addObstacle(xyz_min, xyz_max);
-    // std::cerr << "this should print to terminal!\n";
     EXPECT_EQ(costMap.getVoxelState({2.5,2.5,3}), VoxelState::OCCUPIED);
-    EXPECT_EQ(costMap.getVoxelState({1,1,1}), VoxelState::EMPTY);
+    EXPECT_EQ(costMap.getVoxelState({0.5,0.5,0.5}), VoxelState::EMPTY);
     EXPECT_EQ(costMap.getVoxelState({2,2,2}), VoxelState::OCCUPIED);
     EXPECT_EQ(costMap.getNumChunks(), 1);
+
+    // Add voxel far away so new chunk is created
+    costMap.setVoxelState({20,20,20}, VoxelState::OCCUPIED);
+    EXPECT_EQ(costMap.getVoxelState({20,20,20}), VoxelState::OCCUPIED);
+    EXPECT_EQ(costMap.getNumChunks(), 2);
+}
+
+TEST(CostMapTests, ScaleChange)
+{
+    CostMap costMap(0.25,{0,0,0});
+    std::array<float,3> xyz_min = {1, 1, 1};
+    std::array<float,3> xyz_max {5, 2, 2};
+    costMap.addObstacle(xyz_min, xyz_max);
+    EXPECT_EQ(costMap.getNumChunks(), 2);
+    EXPECT_EQ(costMap.getVoxelState({5,3,3}), VoxelState::EMPTY);
+    EXPECT_EQ(costMap.getVoxelState({5,5,5}), VoxelState::UNKNOWN);
+    EXPECT_EQ(costMap.getVoxelState({1,1,1}), VoxelState::OCCUPIED);
 }
 
 int main(int argc, char **argv)

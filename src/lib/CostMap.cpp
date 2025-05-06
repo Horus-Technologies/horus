@@ -10,7 +10,7 @@ CostMap::CostMap() : _scale(1.0), _mapOffset({0,0,0}){
     _map.emplace(intKey,chunk);
 }
 
-CostMap::CostMap(float scale, std::array<float, 3> mapOffset) : _scale(scale), _mapOffset({-2,-2,0}){
+CostMap::CostMap(float scale, std::array<float, 3> mapOffset) : _scale(scale), _mapOffset(mapOffset){
     Chunk chunk(_res);
     std::array<int, 3> intKey = {static_cast<int>(_mapOffset[0]),
         static_cast<int>(_mapOffset[1]),
@@ -78,7 +78,8 @@ VoxelState CostMap::getVoxelState(const std::array<float,3>& position) const
     auto p = globalToLocal(global);
     std::array<int,3> chunk = p.first;
     std::array<int,3> local = p.second;
-    std::cout << "CHUNK INDICES ARE " << chunk[0] << " " << chunk[1] << " " << chunk[2] << std::endl;
+    // std::cout << "DESIRED CHUNK INDICES ARE " << chunk[0] << " " << chunk[1] << " " << chunk[2] << std::endl;
+    // std::cout << "ACTUAL CHUNK INDICES ARE " << _map.begin()->first[0] << " " << _map.begin()->first[1] << " " << _map.begin()->first[2] << std::endl;
     // Check if chunk exists
     if (_map.find(chunk) != _map.end()){
         // Obtain local indices within chunk
@@ -102,7 +103,6 @@ void CostMap::setVoxelState(std::array<float,3> position, VoxelState state)
     auto p = globalToLocal(global);
     std::array<int,3> chunk = p.first;
     std::array<int,3> local = p.second;
-
     if (_map.find(chunk) == _map.end()){
         // chunk doesn't exist, so make new chunk
         Chunk new_chunk(_res);
@@ -126,15 +126,16 @@ void CostMap::addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_m
         xyz_max_aligned[i] = std::ceil(xyz_max[i]/_scale) * _scale;
     }
 
-    forEachVoxel([&](float x, float y, float z) {
-        // adjust VoxelState if needed
-        if (x >= xyz_min_aligned[0] && x <= xyz_max_aligned[0] &&
-            y >= xyz_min_aligned[1] && y <= xyz_max_aligned[1] &&
-            z >= xyz_min_aligned[2] && z <= xyz_max_aligned[2])
-        {
-            setVoxelState({x,y,z}, VoxelState::OCCUPIED);
+    std::array<int,3> xyz_min_aligned_ind = worldToGlobal(xyz_min_aligned);
+    std::array<int,3> xyz_max_aligned_ind = worldToGlobal(xyz_max_aligned);
+
+    for (int i = xyz_min_aligned_ind[0]; i <= xyz_max_aligned_ind[0]; i++){
+        for (int j = xyz_min_aligned_ind[1]; j <= xyz_max_aligned_ind[1]; j++){
+            for (int k = xyz_min_aligned_ind[2]; k <= xyz_max_aligned_ind[2]; k++){
+                setVoxelState(globalToWorld({i,j,k}), VoxelState::OCCUPIED);
+            }
         }
-    });
+    }
 }
 
 const std::optional<std::vector<std::array<float,3>>> CostMap::emptyNeighbors(const std::array<float,3>& position) const
