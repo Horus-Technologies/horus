@@ -20,12 +20,12 @@ std::array<int,3> Chunk::unflatten(int i) const
     return {i % _res, (i / _res) % _res, i / (_res*_res)}; 
 }
 
-VoxelState Chunk::getVoxelState(int i) const
+VoxelState Chunk::getVoxelState(std::array<int,3> ind) const
 {
-    return _voxels[i];
+    return _voxels[flatten(ind)];
 }
 
-void Chunk::setVoxelState(int i, VoxelState state) const
+void Chunk::setVoxelState(std::array<int,3> ind, VoxelState state)
 {
-    _voxels[i] = state;
+    _voxels[flatten(ind)] = state;
 }

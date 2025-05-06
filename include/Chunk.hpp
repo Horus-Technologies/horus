@@ -17,12 +17,13 @@ class Chunk{
     public:
         Chunk();
         Chunk(int res);
+        VoxelState getVoxelState(std::array<int,3> ind) const;
+        void setVoxelState(std::array<int,3> ind, VoxelState state);
+        
+    private:
         int flatten(const std::array<int,3>& indices) const;
         std::array<int,3> unflatten(int i) const;
-        VoxelState getVoxelState(int i) const;
-        void setVoxelState(int i, VoxelState state) const;
 
-    private:
         const int _res;
         std::vector<VoxelState> _voxels;
 };

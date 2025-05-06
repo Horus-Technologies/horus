@@ -5,35 +5,54 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include <iostream>
 #include <mutex>
+#include <cmath>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <iostream>
+#include <thread>
+#include <optional>
+#include <utility>
+// #include "chunkKeyHash.hpp"
 
 using ChunkKey = std::array<int, 3>;
+
+namespace std {
+    template <>
+    struct hash<ChunkKey> {
+        std::size_t operator()(const ChunkKey& key) const {
+            std::size_t h1 = std::hash<int>{}(key[0]);
+            std::size_t h2 = std::hash<int>{}(key[1]);
+            std::size_t h3 = std::hash<int>{}(key[2]);
+            return h1 ^ (h2 << 1) ^ (h3 << 2);
+        }
+    };
+}
 
 class CostMap
 {
 public:
     CostMap();
     CostMap(float scale, std::array<float, 3> mapOffset);
+    std::array<int,3> worldToGlobal(const std::array<float,3>& position) const;
+    std::array<float,3> globalToWorld(const std::array<int,3>& global_indices) const;
+    std::pair<std::array<int,3>,std::array<int,3>> globalToLocal(const std::array<int,3>& global_indices) const;
+    std::array<int,3> localToGlobal(const std::array<int,3>& chunk_indices,const std::array<int,3>& local_indices) const;
     VoxelState getVoxelState(const std::array<float,3>& position) const;
-    void setVoxelState(const std::array<float,3>& position, const VoxelState& state) const;
+    void setVoxelState(std::array<float,3> position, VoxelState state);
+    const std::optional<std::vector<std::array<float,3>>> emptyNeighbors(const std::array<float,3>& position) const;
+    bool checkCollision(const std::array<float,3>& point1, const std::array<float,3>& point2) const;
     void addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_max);
-    const std::vector<int> emptyNeighbors(int index_flat) const;
-    bool checkCollision(const std::array<int,3>& voxelA, const std::array<int,3>& voxelB) const;
+    void forEachVoxel(const std::function<void(float x, float y, float z)>& func);
 
-    // VoxelState getVoxelStateByIndices(const std::array<int,3>& indices) const;
-    // std::array<float,3> getVoxelPosition(const std::array<int,3>& indices) const;
-    // std::array<int,3> getVoxelIndices(const std::array<float,3>& position) const;
-    // void setVoxelStateByIndices(const std::array<int,3>& indices, const VoxelState& state);
-    // void setVoxelStateByPosition(const std::array<float,3>& position, const VoxelState& state);
-    // std::array<float,3> getMaxPosition() const;
     float getScale() const { return _scale;} ;
     std::array<int,3> getDims()const{ return {_res,_res,_res};};
     std::array<float,3> getMapOffset() const{return _mapOffset;};
+    // std::unordered_map<ChunkKey, Chunk>* getMap() const{return &_map;};
+    int getNumChunks() const {return _map.size();};
 
-    
 private:
-    static constexp int _res = 16;
+    static constexpr int _res = 16;
     std::unordered_map<ChunkKey, Chunk> _map;
     const float _scale; // length of each voxel edge
     std::array<float, 3> _mapOffset; // position offset from base (odom in our case) frame to costmap instance

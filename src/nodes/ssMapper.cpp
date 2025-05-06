@@ -122,7 +122,6 @@ void ssMapper::processPoints(){
     sensor_msgs::PointCloud2Iterator<float> iter_y(_points, "y");
     sensor_msgs::PointCloud2Iterator<float> iter_z(_points, "z");
     Eigen::Matrix3f R = _orientation.toRotationMatrix();
-    std::array<float,3> max_position = _costMap->getMaxPosition();
     //loop through all points
     for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
         //rotate points so they are aligned with robot orientation
@@ -135,16 +134,9 @@ void ssMapper::processPoints(){
         tempPoint[1] += _position[1];
         tempPoint[2] += _position[2];
 
-        //ensuring that point is not going to be outside of costmap
-        if (tempPoint[0] > 0 && tempPoint[0] < max_position[0]
-            && tempPoint[1] > 0 && tempPoint[1] < max_position[1]
-            && tempPoint[2] > 0.25 && tempPoint[2] < max_position[2]){ 
-            // determine which voxel in costmap this point belongs to
-            _costMap->setVoxelStateByPosition({tempPoint[0], tempPoint[1], tempPoint[2]}, VoxelState::OCCUPIED);
-            // set neighbors to be occupied also
-            std::array<int,3> indices = _costMap->getVoxelIndices({tempPoint[0], tempPoint[1], tempPoint[2]});
-            inflateRecursivelyFromIndex(indices, 0, 2);
-        }
+        _costMap->setVoxelState({tempPoint[0], tempPoint[1], tempPoint[2]}, VoxelState::OCCUPIED);
+            
+        // inflateRecursivelyFromIndex(indices, 0, 2);
     }
 
     auto endTimer = std::chrono::high_resolution_clock::now();
@@ -152,17 +144,17 @@ void ssMapper::processPoints(){
     RCLCPP_INFO(this->get_logger(),"Points processed in %f sec",duration.count());
 }
 
-void ssMapper::inflateRecursivelyFromIndex(std::array<int,3> indices, int counter, int maxIterations)
-{
-    if (counter > maxIterations){
-        return;
-    }
-    std::vector<int> neighbors = _costMap->emptyNeighbors(_costMap->flatten(indices));
-    for (int i : neighbors){
-        _costMap->setVoxelStateByIndices(_costMap->unflatten(i), VoxelState::OCCUPIED);
-        inflateRecursivelyFromIndex(_costMap->unflatten(i), counter+1, maxIterations);
-    }
-}
+// void ssMapper::inflateRecursivelyFromIndex(std::array<int,3> indices, int counter, int maxIterations)
+// {
+//     if (counter > maxIterations){
+//         return;
+//     }
+//     std::vector<int> neighbors = _costMap->emptyNeighbors(_costMap->flatten(indices));
+//     for (int i : neighbors){
+//         _costMap->setVoxelStateByIndices(_costMap->unflatten(i), VoxelState::OCCUPIED);
+//         inflateRecursivelyFromIndex(_costMap->unflatten(i), counter+1, maxIterations);
+//     }
+// }
 
 void ssMapper::visualizeCostMap()
 {
@@ -170,15 +162,12 @@ void ssMapper::visualizeCostMap()
     visualization_msgs::msg::MarkerArray marker_array;
     int markerId = 0;
 
-    for (int i = 0; i < _costMap->getDims()[0]; ++i)
-    {
-        for (int j = 0; j < _costMap->getDims()[1]; ++j)
+    _costMap->forEachVoxel([&](float x, float y, float z) {
+        // RCLCPP_INFO(this->get_logger(),"Voxel at (%f, %f, %f)",x,y,z);
+
+        VoxelState state = _costMap->getVoxelState({x,y,z});
+        if (state == VoxelState::OCCUPIED)
         {
-        for (int k = 0; k < _costMap->getDims()[2]; ++k)
-        {
-            VoxelState state = _costMap->getVoxelStateByIndices({i,j,k});
-            if (state == VoxelState::OCCUPIED)
-            {
             visualization_msgs::msg::Marker marker;
             marker.header.frame_id = "odom";
             marker.header.stamp = this->get_clock()->now();
@@ -189,10 +178,9 @@ void ssMapper::visualizeCostMap()
             marker.action = visualization_msgs::msg::Marker::ADD;
 
             // Set the pose
-            std::array<float, 3> pos = _costMap->getVoxelPosition({i,j,k});
-            marker.pose.position.x = pos[0];
-            marker.pose.position.y = pos[1];
-            marker.pose.position.z = pos[2];
+            marker.pose.position.x = x;
+            marker.pose.position.y = y;
+            marker.pose.position.z = z;
             marker.pose.orientation.x = 0.0;
             marker.pose.orientation.y = 0.0;
             marker.pose.orientation.z = 0.0;
@@ -212,10 +200,9 @@ void ssMapper::visualizeCostMap()
 
             // Add the marker to the array
             marker_array.markers.push_back(marker);
-            }
         }
-        }
-    }
+    });
+
     _publisher_map_markers->publish(marker_array);
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;

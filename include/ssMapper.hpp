@@ -53,6 +53,7 @@ class ssMapper : public rclcpp::Node
         std::deque<sensor_msgs::msg::PointCloud2::SharedPtr> _points_buffer;
         double _poseStartTime;
         double _pointStartTime;
+        int _markerId = 0;
 
         std::mutex _points_mutex;
 };
