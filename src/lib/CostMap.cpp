@@ -181,31 +181,31 @@ const std::optional<std::vector<std::array<float,3>>> CostMap::emptyNeighbors(co
         int ny = local[1] + offset[1];
         int nz = local[2] + offset[2];
 
-        std::array<int,3> chunkDelta = {nx,ny,nz};
-        if (chunkDelta == std::array<int, 3>{0,0,0}){ // neighbor within same chunk as original voxel
+        auto delta = chunkDelta(nx,ny,nz);
+        if (delta == std::array<int, 3>{0,0,0}){ // neighbor within same chunk as original voxel
             if(_map.at(chunk).getVoxelState({nx,ny,nz}) == VoxelState::EMPTY){
                 std::array<int,3> n_global = localToGlobal(chunk,{nx,ny,nz});
-                std::array<float,3> n_wold = globalToWorld(n_global);
-                emp_neighbors.push_back(n_wold);
+                std::array<float,3> n_world = globalToWorld(n_global);
+                emp_neighbors.push_back(n_world);
             }
         }
         else{
             // adjust chunk
-            chunk[0] += chunkDelta[0];
-            chunk[1] += chunkDelta[1];
-            chunk[2] += chunkDelta[2];
+            std::array<int,3> new_chunk = chunk;
+            new_chunk[0] += delta[0];
+            new_chunk[1] += delta[1];
+            new_chunk[2] += delta[2];
 
             // check if chunk exists
-            if (_map.find(chunk) != _map.end()){
-                if(_map.at(chunk).getVoxelState({nx,ny,nz}) == VoxelState::EMPTY){
-                    std::array<int,3> n_global = localToGlobal(chunk,{nx,ny,nz});
-                    std::array<float,3> n_wold = globalToWorld(n_global);
-                    emp_neighbors.push_back(n_wold);
+            if (_map.find(new_chunk) != _map.end()){
+                if(_map.at(new_chunk).getVoxelState({nx,ny,nz}) == VoxelState::EMPTY){
+                    std::array<int,3> n_global = localToGlobal(new_chunk,{nx,ny,nz});
+                    std::array<float,3> n_world = globalToWorld(n_global);
+                    emp_neighbors.push_back(n_world);
                 }
             }
         }
-    }
-    
+    }    
     return emp_neighbors;
 }
 

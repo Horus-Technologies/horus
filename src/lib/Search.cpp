@@ -1,17 +1,14 @@
 #include "Search.hpp"
 
 namespace Search{
-  std::unique_ptr<int[]> runBreadthFirst(const CostMap& costMap, const std::array<int,3>& start, const std::array<int,3>& goal)
+  std::vector<std::array<float,3>> runBreadthFirst(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal)
   {
     std::cout << "Breadth-first search starting" << std::endl;
     auto startTimer = std::chrono::high_resolution_clock::now();
-    int startFlat = costMap.flatten(start);
-    int goalFlat = costMap.flatten(goal);
 
     std::queue<int> frontier;
-    frontier.push(startFlat);
-
-    int arraySize = std::pow(costMap.getDims()[0], 3);
+    frontier.push(start);
+    
     std::unique_ptr<int[]> came_from = std::make_unique<int[]>(arraySize);
 
     for (size_t i = 1; i < arraySize; ++i) {

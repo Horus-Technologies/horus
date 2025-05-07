@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "CostMap.hpp"
+#include "Search.hpp"
 
 TEST(CostMapTests, FrameConversions)
 {
@@ -108,6 +109,48 @@ TEST(CostMapTests, NegativeWorldCoordinatesAddObstacle)
     // EXPECT_EQ(costMap.getVoxelState({5,5,5}), VoxelState::UNKNOWN);
     // EXPECT_EQ(costMap.getVoxelState({1,1,1}), VoxelState::OCCUPIED);
 }
+
+TEST(CostMapTests, EmptyNeighborsWithObstacle)
+{
+    CostMap costMap;
+    // No Obstacle
+    auto neighbors = costMap.emptyNeighbors({4,4,4});
+    EXPECT_TRUE(neighbors.has_value());
+    EXPECT_EQ(neighbors.value().size(), 6);
+    auto broken_neighbors = costMap.emptyNeighbors({100,100,100});
+    EXPECT_FALSE(broken_neighbors.has_value());
+    neighbors = costMap.emptyNeighbors({0,0,0});
+    EXPECT_EQ(neighbors.value().size(), 3);
+
+    // With Obstacle
+    std::array<float,3> xyz_min = {1, 1, 1};
+    std::array<float,3> xyz_max {4, 4, 4};
+    costMap.addObstacle(xyz_min, xyz_max);
+    EXPECT_EQ(costMap.getVoxelState({2,0.5,2}), VoxelState::EMPTY);
+    auto working_neighbors = costMap.emptyNeighbors({2,0.5,2});
+    EXPECT_TRUE(working_neighbors.has_value());
+    EXPECT_EQ(working_neighbors.value().size(), 4);
+    std::vector<std::array<float,3>> expected_neighbors;
+    expected_neighbors.push_back({3.5,0.5,2.5});
+    expected_neighbors.push_back({1.5,0.5,2.5});
+    expected_neighbors.push_back({2.5,0.5,3.5});
+    expected_neighbors.push_back({2.5,0.5,1.5});
+    for (int i = 0; i < working_neighbors.value().size(); i++){
+        EXPECT_EQ(working_neighbors.value()[i], expected_neighbors[i]);
+    }
+}
+
+// TEST(SearchTests, BreadthFirstSearch)
+// {
+//     CostMap costMap;
+//     std::array<float,3> xyz_min = {1, 1, 0};
+//     std::array<float,3> xyz_max {3, 3, 3};
+//     costMap.addObstacle(xyz_min, xyz_max);
+//     std::array<float,3> start = {0,0,0};
+//     std::array<float,3> goal = {4,4,4};
+//     std::vector<std::array<float,3>> path = Search::runBreadthFirst(costMap, start, goal);
+
+// }
 
 
 int main(int argc, char **argv)

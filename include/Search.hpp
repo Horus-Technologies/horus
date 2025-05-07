@@ -11,15 +11,15 @@ namespace Search{
     void cleanPath(const CostMap& costMap, std::vector<std::array<int,3>>& path);
 }
 
-namespace std {
-    template <>
-    struct hash<std::array<int, 3>> {
-        size_t operator()(const std::array<int, 3>& arr) const {
-            size_t h = 0;
-            for (int val : arr) {
-                h ^= std::hash<int>{}(val) + 0x9e3779b9 + (h << 6) + (h >> 2);
-            }
-            return h;
-        }
-    };
-}
+// namespace std {
+//     template <>
+//     struct hash<std::array<int, 3>> {
+//         size_t operator()(const std::array<int, 3>& arr) const {
+//             size_t h = 0;
+//             for (int val : arr) {
+//                 h ^= std::hash<int>{}(val) + 0x9e3779b9 + (h << 6) + (h >> 2);
+//             }
+//             return h;
+//         }
+//     };
+// }
