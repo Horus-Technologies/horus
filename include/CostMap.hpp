@@ -40,12 +40,13 @@ public:
     std::array<int,3> localToGlobal(const std::array<int,3>& chunk_indices,const std::array<int,3>& local_indices) const;
     VoxelState getVoxelState(const std::array<float,3>& position) const;
     void setVoxelState(std::array<float,3> position, VoxelState state);
-    const std::optional<std::vector<std::array<float,3>>> emptyNeighbors(const std::array<float,3>& position) const;
+    const std::optional<std::vector<std::array<int,3>>> emptyNeighbors(const std::array<int,3>& position) const;
     bool checkCollision(const std::array<float,3>& point1, const std::array<float,3>& point2) const;
     void addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_max);
     void forEachVoxel(const std::function<void(float x, float y, float z)>& func);
 
     std::vector<std::array<int,3>> getChunkIndices() const;
+    std::pair<std::array<float,3>, std::array<float,3>> mapLimits() const;
 
     float getScale() const { return _scale;} ;
     int getNumChunks() const {return _map.size();};

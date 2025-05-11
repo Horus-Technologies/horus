@@ -128,18 +128,16 @@ void CostMap::addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_m
         for (int j = xyz_min_aligned_ind[1]; j < xyz_max_aligned_ind[1]; j++){
             for (int k = xyz_min_aligned_ind[2]; k < xyz_max_aligned_ind[2]; k++){
                 setVoxelState(globalToWorld({i,j,k}), VoxelState::OCCUPIED);
-                // std::cout << "Voxel added at " << i << "," << j << "," << k << std::endl;
             }
         }
     }
 }
 
-const std::optional<std::vector<std::array<float,3>>> CostMap::emptyNeighbors(const std::array<float,3>& position) const
+const std::optional<std::vector<std::array<int,3>>> CostMap::emptyNeighbors(const std::array<int,3>& position) const
 {
-    std::vector<std::array<float,3>> emp_neighbors; // world coordinates of empty neighbors
+    std::vector<std::array<int,3>> emp_neighbors; // world coordinates of empty neighbors
 
-    std::array<int,3> global = worldToGlobal(position);
-    auto p = globalToLocal(global);
+    auto p = globalToLocal(position);
     std::array<int,3> chunk = p.first;
     std::array<int,3> local = p.second;
 
@@ -185,8 +183,8 @@ const std::optional<std::vector<std::array<float,3>>> CostMap::emptyNeighbors(co
         if (delta == std::array<int, 3>{0,0,0}){ // neighbor within same chunk as original voxel
             if(_map.at(chunk).getVoxelState({nx,ny,nz}) == VoxelState::EMPTY){
                 std::array<int,3> n_global = localToGlobal(chunk,{nx,ny,nz});
-                std::array<float,3> n_world = globalToWorld(n_global);
-                emp_neighbors.push_back(n_world);
+                // std::array<float,3> n_world = globalToWorld(n_global);
+                emp_neighbors.push_back(n_global);
             }
         }
         else{
@@ -200,8 +198,8 @@ const std::optional<std::vector<std::array<float,3>>> CostMap::emptyNeighbors(co
             if (_map.find(new_chunk) != _map.end()){
                 if(_map.at(new_chunk).getVoxelState({nx,ny,nz}) == VoxelState::EMPTY){
                     std::array<int,3> n_global = localToGlobal(new_chunk,{nx,ny,nz});
-                    std::array<float,3> n_world = globalToWorld(n_global);
-                    emp_neighbors.push_back(n_world);
+                    // std::array<float,3> n_world = globalToWorld(n_global);
+                    emp_neighbors.push_back(n_global);
                 }
             }
         }
@@ -330,4 +328,41 @@ std::vector<std::array<int,3>> CostMap::getChunkIndices() const
     }
 
     return chunks;
+}
+
+// Pair of min xyz and max xyz that show chunk-wise map limits in rectangular prism fashion
+std::pair<std::array<float,3>, std::array<float,3>> CostMap::mapLimits() const
+{
+    int maxChunk_x = 0;
+    int maxChunk_y = 0;
+    int maxChunk_z = 0;
+
+    int minChunk_x = 0;
+    int minChunk_y = 0;
+    int minChunk_z = 0;
+    
+    for (const auto& pair : _map){
+        const ChunkKey chunk_indices = pair.first;
+        
+        if(chunk_indices[0] > maxChunk_x){maxChunk_x = chunk_indices[0];}
+        if(chunk_indices[1] > maxChunk_y){maxChunk_y = chunk_indices[1];}
+        if(chunk_indices[2] > maxChunk_z){maxChunk_z = chunk_indices[2];}
+
+        if(chunk_indices[0] < minChunk_x){minChunk_x = chunk_indices[0];}
+        if(chunk_indices[1] < minChunk_y){minChunk_y = chunk_indices[1];}
+        if(chunk_indices[2] < minChunk_z){minChunk_z = chunk_indices[2];}
+    }
+
+    std::array<float,3> minXYZ = {
+        _res*_scale*minChunk_x,
+        _res*_scale*minChunk_y,
+        _res*_scale*minChunk_z
+    };
+    std::array<float,3> maxXYZ = {
+        _res*_scale*(maxChunk_x+1),
+        _res*_scale*(maxChunk_y+1),
+        _res*_scale*(maxChunk_z+1)
+    };
+
+    return {minXYZ, maxXYZ};
 }

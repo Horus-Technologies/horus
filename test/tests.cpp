@@ -110,7 +110,7 @@ TEST(CostMapTests, NegativeWorldCoordinatesAddObstacle)
     // EXPECT_EQ(costMap.getVoxelState({1,1,1}), VoxelState::OCCUPIED);
 }
 
-TEST(CostMapTests, EmptyNeighborsWithObstacle)
+TEST(CostMapTests, EmptyNeighbors)
 {
     CostMap costMap;
     // No Obstacle
@@ -127,30 +127,101 @@ TEST(CostMapTests, EmptyNeighborsWithObstacle)
     std::array<float,3> xyz_max {4, 4, 4};
     costMap.addObstacle(xyz_min, xyz_max);
     EXPECT_EQ(costMap.getVoxelState({2,0.5,2}), VoxelState::EMPTY);
-    auto working_neighbors = costMap.emptyNeighbors({2,0.5,2});
-    EXPECT_TRUE(working_neighbors.has_value());
+    auto working_neighbors = costMap.emptyNeighbors({2,0,2});
+    ASSERT_TRUE(working_neighbors.has_value());
     EXPECT_EQ(working_neighbors.value().size(), 4);
-    std::vector<std::array<float,3>> expected_neighbors;
-    expected_neighbors.push_back({3.5,0.5,2.5});
-    expected_neighbors.push_back({1.5,0.5,2.5});
-    expected_neighbors.push_back({2.5,0.5,3.5});
-    expected_neighbors.push_back({2.5,0.5,1.5});
+    std::vector<std::array<int,3>> expected_neighbors;
+    expected_neighbors.push_back({3,0,2});
+    expected_neighbors.push_back({1,0,2});
+    expected_neighbors.push_back({2,0,3});
+    expected_neighbors.push_back({2,0,1});
     for (int i = 0; i < working_neighbors.value().size(); i++){
         EXPECT_EQ(working_neighbors.value()[i], expected_neighbors[i]);
     }
 }
 
-// TEST(SearchTests, BreadthFirstSearch)
-// {
-//     CostMap costMap;
-//     std::array<float,3> xyz_min = {1, 1, 0};
-//     std::array<float,3> xyz_max {3, 3, 3};
-//     costMap.addObstacle(xyz_min, xyz_max);
-//     std::array<float,3> start = {0,0,0};
-//     std::array<float,3> goal = {4,4,4};
-//     std::vector<std::array<float,3>> path = Search::runBreadthFirst(costMap, start, goal);
+TEST(CostMapTests, CheckCollision)
+{
+    CostMap costMap;
+    std::array<float,3> xyz_min = {1, 1, 1};
+    std::array<float,3> xyz_max {4, 4, 4};
+    costMap.addObstacle(xyz_min, xyz_max);
+    EXPECT_FALSE(costMap.checkCollision({5,5,5},{6,6,6}));
+    EXPECT_TRUE(costMap.checkCollision({5,5,5},{0,0,0}));
+}
 
-// }
+TEST(CostMapTests, MapLimits)
+{
+    CostMap costMap;
+    costMap.setVoxelState({-3,1,1}, VoxelState::OCCUPIED);
+    costMap.setVoxelState({20,1,1}, VoxelState::OCCUPIED);
+    auto p = costMap.mapLimits();
+    std::array<float,3> exp_min = {-16, 0, 0};
+    std::array<float,3> exp_max {32, 16, 16};
+    EXPECT_EQ(p.first,exp_min);
+    EXPECT_EQ(p.second,exp_max);
+}
+
+TEST(SearchTests, CameFrom)
+{
+    std::array<int,3> dims = {16, 32, 48};
+    Search::CameFrom came_from(dims);
+
+    std::array<int,3> test_index = {15,10,8};
+    std::array<int,3> default_index = {-1,-1,-1};
+    EXPECT_EQ(came_from.at(test_index), default_index);
+
+    std::array<int,3> expected_index = {14,12,11};
+    came_from.set(test_index,expected_index);
+    EXPECT_EQ(came_from.at(test_index), expected_index);
+}
+
+TEST(SearchTests, BreadthFirstSearch)
+{
+    CostMap costMap;
+    // Simple line
+    std::array<float,3> start = {0,0,0};
+    std::array<float,3> goal = {4,0.3,0.3};
+    std::vector<std::array<float,3>> path = Search::runBreadthFirst(costMap, start, goal);
+    std::vector<std::array<float,3>> expected_path;
+    expected_path.push_back({0,0,0});
+    expected_path.push_back({1.5,0.5,0.5});
+    expected_path.push_back({2.5,0.5,0.5});
+    expected_path.push_back({3.5,0.5,0.5});
+    expected_path.push_back({4,0.3,0.3});
+    for (int i = 0; i < path.size(); i++){
+        EXPECT_EQ(path[i], expected_path[i]);
+    }
+
+    // Around obstacle
+    std::array<float,3> xyz_min = {1, 1, 0};
+    std::array<float,3> xyz_max {3, 3, 3};
+    costMap.addObstacle(xyz_min, xyz_max);
+    start = {2.5,0.5,1.5};
+    goal = {3.5,3.5,1.5};
+    path = Search::runBreadthFirst(costMap, start, goal);
+    expected_path.clear();
+    expected_path.push_back({2.5,0.5,1.5});
+    expected_path.push_back({3.5,0.5,1.5});
+    expected_path.push_back({3.5,1.5,1.5});
+    expected_path.push_back({3.5,2.5,1.5});
+    expected_path.push_back({3.5,3.5,1.5});
+    for (int i = 0; i < path.size(); i++){
+        EXPECT_EQ(path[i], expected_path[i]);
+    }
+
+    // Clean Path
+    Search::cleanPath(costMap, path);
+    EXPECT_EQ(path.size(), 3);
+    expected_path.clear();
+    expected_path.push_back({2.5,0.5,1.5});
+    expected_path.push_back({3.5,0.5,1.5});
+    expected_path.push_back({3.5,3.5,1.5});
+    for (int i = 0; i < path.size(); i++){
+        EXPECT_EQ(path[i], expected_path[i]);
+    }
+}
+
 
 
 int main(int argc, char **argv)

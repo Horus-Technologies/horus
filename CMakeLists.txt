@@ -152,7 +152,11 @@ ament_target_dependencies(demoMapper
 
 # Tests
 find_package(ament_cmake_gtest REQUIRED)
-ament_add_gtest(tests test/tests.cpp src/lib/Chunk.cpp src/lib/CostMap.cpp)
+ament_add_gtest(tests 
+  test/tests.cpp 
+  src/lib/Chunk.cpp 
+  src/lib/CostMap.cpp
+  src/lib/Search.cpp)
 target_include_directories(tests PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -160,7 +164,7 @@ target_include_directories(tests PUBLIC
 
 # Install Cpp executables
 install(TARGETS
-  # fsm
+  fsm
   # trajectory_controller
   # demoBFS
   # demoVoxelization
