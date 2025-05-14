@@ -17,7 +17,7 @@ generates local waypoints within local cost map.
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "std_msgs/msg/u_int16_multi_array.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "nav_msgs/msg/path.hpp"
@@ -36,8 +36,8 @@ public:
 private:
     void run();
     void callback_drone(const nav_msgs::msg::Odometry::SharedPtr odometry);
-    void callback_goal(const std_msgs::msg::UInt16MultiArray::SharedPtr goal);
-    void visualizePath(std::vector<std::array<int,3>>& path);
+    void callback_goal(const std_msgs::msg::Float32MultiArray::SharedPtr goal);
+    void visualizePath(std::vector<std::array<float,3>>& path);
     void visualizeCostMap();
 
     // Publisher members
@@ -49,13 +49,13 @@ private:
 
     // Subscriber members
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr _subscriberDrone;
-    rclcpp::Subscription<std_msgs::msg::UInt16MultiArray>::SharedPtr _subscriberGoal;
+    rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr _subscriberGoal;
     nav_msgs::msg::Odometry _lastPoseDrone;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscriber;
 
     CostMap* _costMap;
-    std::array<int,3> _start;
-    std::array<int,3> _goal;
+    std::array<float,3> _start;
+    std::array<float,3> _goal;
     std::mutex _mutex;
 };
 

@@ -3,6 +3,8 @@
 #include <queue>
 #include <chrono>
 #include <cmath>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 using PathMap = std::unordered_map<std::array<int,3>,std::array<int,3>>;
 
@@ -46,7 +48,9 @@ namespace Search{
         }
     };
 
-    std::vector<std::array<float,3>> runBreadthFirst(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal);
+    void runSearch(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal);
+    std::array<float,3> findLocalGoal(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal);
+    std::optional<std::vector<std::array<float,3>>> runBreadthFirst(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal);
     void cleanPath(const CostMap& costMap, std::vector<std::array<float,3>>& path);
 }
 

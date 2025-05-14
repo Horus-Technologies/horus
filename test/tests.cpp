@@ -182,15 +182,15 @@ TEST(SearchTests, BreadthFirstSearch)
     // Simple line
     std::array<float,3> start = {0,0,0};
     std::array<float,3> goal = {4,0.3,0.3};
-    std::vector<std::array<float,3>> path = Search::runBreadthFirst(costMap, start, goal);
+    auto path = Search::runBreadthFirst(costMap, start, goal);
     std::vector<std::array<float,3>> expected_path;
     expected_path.push_back({0,0,0});
     expected_path.push_back({1.5,0.5,0.5});
     expected_path.push_back({2.5,0.5,0.5});
     expected_path.push_back({3.5,0.5,0.5});
     expected_path.push_back({4,0.3,0.3});
-    for (int i = 0; i < path.size(); i++){
-        EXPECT_EQ(path[i], expected_path[i]);
+    for (int i = 0; i < path.value().size(); i++){
+        EXPECT_EQ(path.value()[i], expected_path[i]);
     }
 
     // Around obstacle
@@ -206,23 +206,59 @@ TEST(SearchTests, BreadthFirstSearch)
     expected_path.push_back({3.5,1.5,1.5});
     expected_path.push_back({3.5,2.5,1.5});
     expected_path.push_back({3.5,3.5,1.5});
-    for (int i = 0; i < path.size(); i++){
-        EXPECT_EQ(path[i], expected_path[i]);
+    for (int i = 0; i < path.value().size(); i++){
+        EXPECT_EQ(path.value()[i], expected_path[i]);
     }
 
     // Clean Path
-    Search::cleanPath(costMap, path);
-    EXPECT_EQ(path.size(), 3);
+    Search::cleanPath(costMap, path.value());
+    EXPECT_EQ(path.value().size(), 3);
     expected_path.clear();
     expected_path.push_back({2.5,0.5,1.5});
     expected_path.push_back({3.5,0.5,1.5});
     expected_path.push_back({3.5,3.5,1.5});
-    for (int i = 0; i < path.size(); i++){
-        EXPECT_EQ(path[i], expected_path[i]);
+    for (int i = 0; i < path.value().size(); i++){
+        EXPECT_EQ(path.value()[i], expected_path[i]);
     }
+
+
+    // Impossible path that starts in obstacle
+    start = {2,2,2};
+    goal = {3,3,3};
+    path = Search::runBreadthFirst(costMap, start, goal);
+    EXPECT_FALSE(path.has_value());
+    
 }
 
+TEST(SearchTests, StartAndGoalNotInChunk)
+{
+    // Start is not in a chunk
+    CostMap costMap;
+    std::array<float,3> xyz_min = {1, 1, 1};
+    std::array<float,3> xyz_max {3, 3, 3};
+    costMap.addObstacle(xyz_min, xyz_max);
+    std::array<float,3> start = {-1,-1,-1};
+    std::array<float,3> goal = {4,4,4};
+    auto path = Search::runSearch(costMap, start, goal);
+    EXPECT_TRUE(path.has_value());
 
+    // Goal is not in local region
+    // goal = {20,20,20};
+    // path = Search::runSearch(costMap, start, goal);
+    // EXPECT_TRUE(path.has_value());
+    // std::array<float,3> expected_local_goal = {16.5, 16.5, 16.5};
+    // EXPECT_EQ(path.value().back(), expected_local_goal);
+}
+
+TEST(SearchTests, FindLocalGoal)
+{
+    CostMap costMap;
+    std::array<float,3> start = {0,0,0};
+    std::array<float,3> goal = {20,20,20};
+    int localRegionSize = 16;
+    std::array<float,3> local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
+
+}
 
 int main(int argc, char **argv)
 {

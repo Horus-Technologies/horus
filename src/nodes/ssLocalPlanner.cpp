@@ -28,9 +28,9 @@ ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
         this->callback_drone(odometry);
     },options);
 
-    _subscriberGoal = this->create_subscription<std_msgs::msg::UInt16MultiArray>(
+    _subscriberGoal = this->create_subscription<std_msgs::msg::Float32MultiArray>(
       "/global_goal", 10,
-      [this](const std_msgs::msg::UInt16MultiArray::SharedPtr goal) {
+      [this](const std_msgs::msg::Float32MultiArray::SharedPtr goal) {
           this->callback_goal(goal);
       },options);
 
@@ -45,54 +45,35 @@ ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
 void ssLocalPlanner::run()
 {
   // Update _start with drone pose in map frame
-  _start = _costMap->getVoxelIndices({
+  _start = {
     _lastPoseDrone.pose.pose.position.x,
     _lastPoseDrone.pose.pose.position.y,
     _lastPoseDrone.pose.pose.position.z
-  });
-  // temporarily until costmap frame is figured out
-  if (_start[0] < 0) {_start[0] = 0;}
-  if (_start[1] < 0) {_start[1] = 0;}
-  if (_start[2] < 0) {_start[2] = 0;}
+  };
   
-  RCLCPP_INFO(this->get_logger(), "Start: %d %d %d"
+  RCLCPP_INFO(this->get_logger(), "Start: %f %f %f"
   , _start[0], _start[1], _start[2]);
-  std::unique_ptr<int[]> came_from = Search::runBreadthFirst(*_costMap, _start, _goal);
-  if (came_from[_costMap->flatten(_goal)] == -1){
+  auto path = Search::runBreadthFirst(*_costMap, _start, _goal);
+  if (!path.has_value()){
     RCLCPP_WARN(this->get_logger(), "Search unable to find path to goal!");
   }
   else{
-    // Obtain path
-    std::array<int,3> current = _goal;
-    std::vector<std::array<int,3>> path;
-    while(current != _start)
-    {
-      path.push_back(current);
-      // RCLCPP_INFO(this->get_logger(), "Current: %d %d %d"
-      //   , current[0], current[1], current[2]);
-      std::array<int,3> prev = _costMap->unflatten(
-        came_from[_costMap->flatten(current)]);
-      current = prev;
-    }
-    path.push_back(_start); // append start voxel
-    
-    std::reverse(path.begin(),path.end()); // start --> goal
-    visualizePath(path);
-    Search::cleanPath(*_costMap, path);
-    Search::cleanPath(*_costMap, path);
+    visualizePath(path.value());
+    Search::cleanPath(*_costMap, path.value());
+    Search::cleanPath(*_costMap, path.value());
   
     _lastPath.poses.clear();
     
     // compute point on _start voxel that intersects with first 
     double totalPathTime = 0.0;
     int i = 0;
-    std::array<int,3> prevVoxelIndices = path.front();
-    for(std::array<int,3> voxelIndices : path)
+    std::array<float,3> prevPoint = path.value().front();
+    for(std::array<float,3> point : path.value())
     {
       auto pose = geometry_msgs::msg::PoseStamped();
-      pose.pose.position.x = _costMap->getVoxelPosition(voxelIndices)[0];
-      pose.pose.position.y = _costMap->getVoxelPosition(voxelIndices)[1];
-      pose.pose.position.z = _costMap->getVoxelPosition(voxelIndices)[2];
+      pose.pose.position.x = point[0];
+      pose.pose.position.y = point[1];
+      pose.pose.position.z = point[2];
       pose.pose.orientation.x = 0.00081;
       pose.pose.orientation.y = 0.000069;
       pose.pose.orientation.z = 0.703855;
@@ -100,9 +81,9 @@ void ssLocalPlanner::run()
       if (i>0){
         // compute timing for path
         totalPathTime = totalPathTime + 1000 * sqrt(
-          pow(pose.pose.position.x - _costMap->getVoxelPosition(prevVoxelIndices)[0], 2) +
-          pow(pose.pose.position.y - _costMap->getVoxelPosition(prevVoxelIndices)[1], 2) +
-          pow(pose.pose.position.z - _costMap->getVoxelPosition(prevVoxelIndices)[2], 2));
+          pow(pose.pose.position.x - prevPoint[0], 2) +
+          pow(pose.pose.position.y - prevPoint[1], 2) +
+          pow(pose.pose.position.z - prevPoint[2], 2));
         pose.header.stamp.sec = static_cast<int32_t>(totalPathTime);
       }
       else{
@@ -112,7 +93,7 @@ void ssLocalPlanner::run()
   
       _lastPath.poses.push_back(pose);
       i++;
-      prevVoxelIndices = voxelIndices;
+      prevPoint = point;
     }
     
     _lastPath.header.stamp = this->now();
@@ -122,11 +103,11 @@ void ssLocalPlanner::run()
 
 }
 
-void ssLocalPlanner::visualizePath(std::vector<std::array<int,3>>& path)
+void ssLocalPlanner::visualizePath(std::vector<std::array<float,3>>& path)
 {
   visualization_msgs::msg::MarkerArray path_markers;
   int markerId = 0;
-  for (std::array<int,3> indices : path)
+  for (std::array<float,3> pos : path)
   {
     visualization_msgs::msg::Marker marker;
     marker.header.frame_id = "odom";
@@ -138,7 +119,6 @@ void ssLocalPlanner::visualizePath(std::vector<std::array<int,3>>& path)
     marker.action = visualization_msgs::msg::Marker::ADD;
 
     // Set the pose
-    std::array<float, 3> pos = _costMap->getVoxelPosition(indices);
     marker.pose.position.x = pos[0];
     marker.pose.position.y = pos[1];
     marker.pose.position.z = pos[2];
@@ -175,10 +155,10 @@ void ssLocalPlanner::callback_drone(const nav_msgs::msg::Odometry::SharedPtr odo
   // _lastPoseDrone.pose.pose.position.z);
 }
 
-void ssLocalPlanner::callback_goal(const std_msgs::msg::UInt16MultiArray::SharedPtr goal)
+void ssLocalPlanner::callback_goal(const std_msgs::msg::Float32MultiArray::SharedPtr goal)
 {
   // std::lock_guard<std::mutex> lock(_mutex);
-  std::vector<uint16_t> goalData = goal->data;
+  std::vector<float> goalData = goal->data;
   _goal = {goalData[0],goalData[1],goalData[2]};
 
   // RCLCPP_INFO(this->get_logger(),"Goal received from GlobalPlanner: %d %d %d", goalData[0],goalData[1],goalData[2]);

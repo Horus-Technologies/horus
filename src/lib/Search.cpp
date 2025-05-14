@@ -2,12 +2,39 @@
 
 namespace Search{
 
-  std::vector<std::array<float,3>> runBreadthFirst(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal)
-  {
-    std::cout << "Breadth-first search starting" << std::endl;
+  std::optional<std::vector<std::array<float,3>>> runSearch(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal){
+    std::cout << "Search starting" << std::endl;
     auto startTimer = std::chrono::high_resolution_clock::now();
 
-    auto limits = costMap.mapLimits();
+    std::optional<std::vector<std::array<float,3>>> path;
+
+    int localRegionSize = 16; // voxel count in each direction from start
+    std::array<float,3> localGoal = findLocalGoal(costMap, start, goal, localRegionSize)
+    runBreadthFirst(costMap,start, localGoal, path);
+
+    cleanPath(costMap, path.value());
+
+  }
+
+  std::array<float,3> findLocalGoal(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal, const int& localRegionSize){
+    Eigen::Vector3f s(start[0],start[1],start[2]);
+    Eigen::Vector3f g(goal[0],goal[1],goal[2]);
+    Eigen::Vector3f u = (g-s)/(g-s).norm(); // technically don't need to normalize
+
+    Eigen::Vector3f minBound = s - Eigen::Vector3f::Constant(localRegionSize)/2;
+    Eigen::Vector3f maxBound = s + Eigen::Vector3f::Constant(localRegionSize)/2;
+    // Check if local goal is obstructed by an obstacle, in which case move out of it
+    
+  }
+
+  void runBreadthFirst(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal,
+  std::optional<std::vector<std::array<float,3>>>& path)
+  {
+    if (costMap.getVoxelState(start) == VoxelState::OCCUPIED){
+      return std::nullopt;
+    }
+
+    auto limits = costMap.mapLimits(start,goal);
     std::array<float,3> minXYZ = limits.first;
     std::array<float,3> maxXYZ = limits.second;
 
@@ -67,6 +94,10 @@ namespace Search{
           } 
         }
       }
+    }
+
+    if (came_from.at(goal_index) == std::array<int,3>{-1,-1,-1}){
+      return std::nullopt;
     }
 
     // Obtain path

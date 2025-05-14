@@ -331,7 +331,7 @@ std::vector<std::array<int,3>> CostMap::getChunkIndices() const
 }
 
 // Pair of min xyz and max xyz that show chunk-wise map limits in rectangular prism fashion
-std::pair<std::array<float,3>, std::array<float,3>> CostMap::mapLimits() const
+std::pair<std::array<float,3>, std::array<float,3>> CostMap::mapLimits(const std::array<float,3>& start, const std::array<float,3>& goal) const
 {
     int maxChunk_x = 0;
     int maxChunk_y = 0;
@@ -363,6 +363,14 @@ std::pair<std::array<float,3>, std::array<float,3>> CostMap::mapLimits() const
         _res*_scale*(maxChunk_y+1),
         _res*_scale*(maxChunk_z+1)
     };
+
+    minXYZ[0] = std::min({minXYZ[0],start[0],goal[0]});
+    minXYZ[1] = std::min({minXYZ[1],start[1],goal[1]});
+    minXYZ[2] = std::min({minXYZ[2],start[2],goal[2]});
+
+    maxXYZ[0] = std::max({maxXYZ[0],start[0],goal[0]});
+    maxXYZ[1] = std::max({maxXYZ[1],start[1],goal[1]});
+    maxXYZ[2] = std::max({maxXYZ[2],start[2],goal[2]});
 
     return {minXYZ, maxXYZ};
 }

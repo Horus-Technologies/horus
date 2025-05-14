@@ -46,7 +46,7 @@ public:
     void forEachVoxel(const std::function<void(float x, float y, float z)>& func);
 
     std::vector<std::array<int,3>> getChunkIndices() const;
-    std::pair<std::array<float,3>, std::array<float,3>> mapLimits() const;
+    std::pair<std::array<float,3>, std::array<float,3>> mapLimits(const std::array<float,3>& start, const std::array<float,3>& goal) const;
 
     float getScale() const { return _scale;} ;
     int getNumChunks() const {return _map.size();};
