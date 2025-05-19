@@ -53,7 +53,7 @@ void ssLocalPlanner::run()
   
   RCLCPP_INFO(this->get_logger(), "Start: %f %f %f"
   , _start[0], _start[1], _start[2]);
-  auto path = Search::runBreadthFirst(*_costMap, _start, _goal);
+  auto path = Search::runSearch(*_costMap, _start, _goal);
   if (!path.has_value()){
     RCLCPP_WARN(this->get_logger(), "Search unable to find path to goal!");
   }

@@ -150,17 +150,17 @@ TEST(CostMapTests, CheckCollision)
     EXPECT_TRUE(costMap.checkCollision({5,5,5},{0,0,0}));
 }
 
-TEST(CostMapTests, MapLimits)
-{
-    CostMap costMap;
-    costMap.setVoxelState({-3,1,1}, VoxelState::OCCUPIED);
-    costMap.setVoxelState({20,1,1}, VoxelState::OCCUPIED);
-    auto p = costMap.mapLimits();
-    std::array<float,3> exp_min = {-16, 0, 0};
-    std::array<float,3> exp_max {32, 16, 16};
-    EXPECT_EQ(p.first,exp_min);
-    EXPECT_EQ(p.second,exp_max);
-}
+// TEST(CostMapTests, MapLimits)
+// {
+//     CostMap costMap;
+//     costMap.setVoxelState({-3,1,1}, VoxelState::OCCUPIED);
+//     costMap.setVoxelState({20,1,1}, VoxelState::OCCUPIED);
+//     auto p = costMap.mapLimits();
+//     std::array<float,3> exp_min = {-16, 0, 0};
+//     std::array<float,3> exp_max {32, 16, 16};
+//     EXPECT_EQ(p.first,exp_min);
+//     EXPECT_EQ(p.second,exp_max);
+// }
 
 TEST(SearchTests, CameFrom)
 {
@@ -179,10 +179,65 @@ TEST(SearchTests, CameFrom)
 TEST(SearchTests, BreadthFirstSearch)
 {
     CostMap costMap;
-    // Simple line
+    std::array<float,3> start = {0,0,0};
+    std::array<float,3> local_goal = {15,15,15};
+    std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
+    int localRegionSize = 16;
+    Search::runBreadthFirst(costMap, start, local_goal, path, localRegionSize);
+    ASSERT_TRUE(path.has_value());
+}
+
+TEST(SearchTests, FindLocalGoal){
+    CostMap costMap;
+    std::array<float,3> start = {0,0,0};
+    std::array<float,3> goal = {20,20,20};
+    int localRegionSize = 16;
+    std::array<float,3> local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
+    std::array<float,3> expected_local_goal = {15.5,15.5,15.5};
+    EXPECT_EQ(local_goal, expected_local_goal);
+
+    goal = {20,0,0};
+    local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
+    expected_local_goal = {15.5,8,8};
+    EXPECT_EQ(local_goal, expected_local_goal);
+
+    goal = {20,0,0};
+    localRegionSize = 4;
+    local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
+    expected_local_goal = {3.5,2,2};
+    EXPECT_EQ(local_goal, expected_local_goal);
+}
+
+TEST(SearchTests, FindLocalGoalInside){
+    CostMap costMap;
+    std::array<float,3> start = {0,0,0};
+    std::array<float,3> goal = {5,5,5};
+    int localRegionSize = 16;
+    std::array<float,3> local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
+    std::array<float,3> expected_local_goal = {13,13,13};
+    EXPECT_EQ(local_goal, expected_local_goal);
+}
+
+TEST(SearchTests, FindLocalGoalObstacle){
+    CostMap costMap;
+    std::array<float,3> start = {0,0,0};
+    std::array<float,3> goal = {20,0,0};
+    int localRegionSize = 16;
+    std::array<float,3> xyz_min = {14, -2, -2};
+    std::array<float,3> xyz_max {18, 2, 2};
+    costMap.addObstacle(xyz_min, xyz_max);
+    std::array<float,3> local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
+    std::array<float,3> expected_local_goal = {15.5,8,8};
+    EXPECT_EQ(local_goal, expected_local_goal);
+}
+
+TEST(SearchTests, RunSearchSimple)
+{
+    CostMap costMap;
     std::array<float,3> start = {0,0,0};
     std::array<float,3> goal = {4,0.3,0.3};
-    auto path = Search::runBreadthFirst(costMap, start, goal);
+    auto path = Search::runSearch(costMap, start, goal);
+    ASSERT_TRUE(path.has_value());
     std::vector<std::array<float,3>> expected_path;
     expected_path.push_back({0,0,0});
     expected_path.push_back({1.5,0.5,0.5});
@@ -192,15 +247,18 @@ TEST(SearchTests, BreadthFirstSearch)
     for (int i = 0; i < path.value().size(); i++){
         EXPECT_EQ(path.value()[i], expected_path[i]);
     }
+}
 
-    // Around obstacle
+TEST(SearchTests, RunSearchAroundObstacle)
+{
+    CostMap costMap;
     std::array<float,3> xyz_min = {1, 1, 0};
     std::array<float,3> xyz_max {3, 3, 3};
     costMap.addObstacle(xyz_min, xyz_max);
-    start = {2.5,0.5,1.5};
-    goal = {3.5,3.5,1.5};
-    path = Search::runBreadthFirst(costMap, start, goal);
-    expected_path.clear();
+    std::array<float,3> start = {2.5,0.5,1.5};
+    std::array<float,3> goal = {3.5,3.5,1.5};
+    auto path = Search::runSearch(costMap, start, goal);
+    std::vector<std::array<float,3>> expected_path;
     expected_path.push_back({2.5,0.5,1.5});
     expected_path.push_back({3.5,0.5,1.5});
     expected_path.push_back({3.5,1.5,1.5});
@@ -220,14 +278,15 @@ TEST(SearchTests, BreadthFirstSearch)
     for (int i = 0; i < path.value().size(); i++){
         EXPECT_EQ(path.value()[i], expected_path[i]);
     }
+}
 
-
-    // Impossible path that starts in obstacle
-    start = {2,2,2};
-    goal = {3,3,3};
-    path = Search::runBreadthFirst(costMap, start, goal);
+TEST(SearchTests, ImpossiblePathStartingInObstacle)
+{
+    CostMap costMap;
+    std::array<float,3> start = {2,2,2};
+    std::array<float,3> goal = {3,3,3};
+    auto path = Search::runSearch(costMap, start, goal);
     EXPECT_FALSE(path.has_value());
-    
 }
 
 TEST(SearchTests, StartAndGoalNotInChunk)
@@ -248,16 +307,6 @@ TEST(SearchTests, StartAndGoalNotInChunk)
     // EXPECT_TRUE(path.has_value());
     // std::array<float,3> expected_local_goal = {16.5, 16.5, 16.5};
     // EXPECT_EQ(path.value().back(), expected_local_goal);
-}
-
-TEST(SearchTests, FindLocalGoal)
-{
-    CostMap costMap;
-    std::array<float,3> start = {0,0,0};
-    std::array<float,3> goal = {20,20,20};
-    int localRegionSize = 16;
-    std::array<float,3> local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
-
 }
 
 int main(int argc, char **argv)

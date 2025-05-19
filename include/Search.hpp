@@ -48,9 +48,10 @@ namespace Search{
         }
     };
 
-    void runSearch(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal);
-    std::array<float,3> findLocalGoal(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal);
-    std::optional<std::vector<std::array<float,3>>> runBreadthFirst(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal);
+    std::optional<std::vector<std::array<float,3>>> runSearch(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal);
+    std::array<float,3> findLocalGoal(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal, const int& localRegionSize);
+    void runBreadthFirst(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal,
+        std::optional<std::vector<std::array<float,3>>>& path, const int& localRegionSize);
     void cleanPath(const CostMap& costMap, std::vector<std::array<float,3>>& path);
 }
 

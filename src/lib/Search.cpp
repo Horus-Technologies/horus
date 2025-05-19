@@ -6,54 +6,85 @@ namespace Search{
     std::cout << "Search starting" << std::endl;
     auto startTimer = std::chrono::high_resolution_clock::now();
 
-    std::optional<std::vector<std::array<float,3>>> path;
-
-    int localRegionSize = 16; // voxel count in each direction from start
-    std::array<float,3> localGoal = findLocalGoal(costMap, start, goal, localRegionSize)
-    runBreadthFirst(costMap,start, localGoal, path);
-
-    cleanPath(costMap, path.value());
-
-  }
-
-  std::array<float,3> findLocalGoal(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal, const int& localRegionSize){
-    Eigen::Vector3f s(start[0],start[1],start[2]);
-    Eigen::Vector3f g(goal[0],goal[1],goal[2]);
-    Eigen::Vector3f u = (g-s)/(g-s).norm(); // technically don't need to normalize
-
-    Eigen::Vector3f minBound = s - Eigen::Vector3f::Constant(localRegionSize)/2;
-    Eigen::Vector3f maxBound = s + Eigen::Vector3f::Constant(localRegionSize)/2;
-    // Check if local goal is obstructed by an obstacle, in which case move out of it
-    
-  }
-
-  void runBreadthFirst(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal,
-  std::optional<std::vector<std::array<float,3>>>& path)
-  {
     if (costMap.getVoxelState(start) == VoxelState::OCCUPIED){
+      // this means drone is in a wall and something is very wrong
       return std::nullopt;
     }
 
-    auto limits = costMap.mapLimits(start,goal);
-    std::array<float,3> minXYZ = limits.first;
-    std::array<float,3> maxXYZ = limits.second;
+    std::optional<std::vector<std::array<float,3>>> path = std::nullopt;
 
-    std::array<int,3> dims = {(maxXYZ[0] - minXYZ[0])/costMap.getScale(),
-    (maxXYZ[1] - minXYZ[1])/costMap.getScale(),
-    (maxXYZ[2] - minXYZ[2])/costMap.getScale()};
+    int localRegionSize = 16; // voxel count of local region cube side
+    std::array<float,3> localGoal = findLocalGoal(costMap, start, goal, localRegionSize);
+    // Check if local goal is obstructed by an obstacle
+    while(!path.has_value()){
+      if (costMap.getVoxelState(localGoal) == VoxelState::EMPTY){
+        runBreadthFirst(costMap,start, localGoal, path, localRegionSize);
+        if (path.has_value()){
+          // viable path found
+          cleanPath(costMap, path.value());
+        }
+      }
+      else{ // current local goal is OCCUPIED
+        // move localGoal 
+        localGoal[0] = 
+      }
+    }
+    
+
+    auto endTimer = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = endTimer - startTimer;
+    std::cout << "Search finished in " << duration.count() << " sec" << std::endl;
+    
+    return path;
+  }
+
+  // Returns location within local region for goal - in world coordinates and in the local region frame
+  std::array<float,3> findLocalGoal(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal, const int& localRegionSize){
+    Eigen::Vector3f s(start[0],start[1],start[2]);
+    Eigen::Vector3f g(goal[0],goal[1],goal[2]);
+    // Eigen::Vector3f u = (g-s)/(g-s).norm(); // technically don't need to normalize..
+    Eigen::Vector3f u = g-s;
+    float u_max_component = std::max(u[0], std::max(u[1],u[2]));
+
+    // Check if global goal is already inside the local region
+    if (u_max_component < static_cast<float>(localRegionSize)/2){
+      // simply shift to local region frame
+      return {
+        g[0] + (static_cast<float>(localRegionSize)/2), 
+        g[1] + (static_cast<float>(localRegionSize)/2),
+        g[2] + (static_cast<float>(localRegionSize)/2)
+      };
+    }
+    else{
+      // global goal is outside of the local region
+  
+      float t = (static_cast<float>(localRegionSize)/2) / u_max_component;
+      t -= t / localRegionSize; // adjust to make sure the local goal is inside the local region
+      // find local goal in the frame of local region
+      std::array<float,3> local_goal = {
+        u[0]*t + (static_cast<float>(localRegionSize)/2), 
+        u[1]*t + (static_cast<float>(localRegionSize)/2),
+        u[2]*t + (static_cast<float>(localRegionSize)/2)
+      };
+    }
+  }
+
+  void runBreadthFirst(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal,
+  std::optional<std::vector<std::array<float,3>>>& path, const int& localRegionSize)
+  {
+    std::array<int,3> dims = {localRegionSize,localRegionSize,localRegionSize};
 
     CameFrom came_from(dims);
     
     // Make start_index in the CameFrom frame, which is a dense voxel grid of full map with all positive indices.
-    std::array<int,3> start_index = costMap.worldToGlobal(start);
-    start_index[0] += minXYZ[0];
-    start_index[1] += minXYZ[1];
-    start_index[2] += minXYZ[2];
+    // It should start in the middle of the local region
+    std::array<int,3> start_index = {localRegionSize/2, localRegionSize/2, localRegionSize/2};
 
+    // goal_index is also in the local region / CameFrom frame
     std::array<int,3> goal_index = costMap.worldToGlobal(goal);
-    goal_index[0] += minXYZ[0];
-    goal_index[1] += minXYZ[1];
-    goal_index[2] += minXYZ[2];
+    goal_index[0] = goal_index[0] - start_index[0] + localRegionSize/2;
+    goal_index[1] = goal_index[1] - start_index[1] + localRegionSize/2;
+    goal_index[2] = goal_index[2] - start_index[2] + localRegionSize/2;
 
     came_from.set(start_index,start_index);
 
@@ -65,10 +96,6 @@ namespace Search{
       std::array<int,3> current_index = frontier.front();
       frontier.pop();
 
-      current_index[0] -= minXYZ[0];
-      current_index[1] -= minXYZ[1];
-      current_index[2] -= minXYZ[2];
-
       if (current_index == goal_index)
       {
         break;
@@ -76,13 +103,20 @@ namespace Search{
       // std::cout << "Current: " << current_index[0] << " " 
       // << current_index[1] << " "
       // << current_index[2] << std::endl;
-      auto neighbors_optional = costMap.emptyNeighbors(current_index);
+
+      // Convert current_index to global index frame
+      std::array<int,3> current_index_global;
+      current_index_global[0] = current_index[0] + start_index[0] - localRegionSize/2;
+      current_index_global[1] = current_index[1] + start_index[1] - localRegionSize/2;
+      current_index_global[2] = current_index[2] + start_index[2] - localRegionSize/2;
+      auto neighbors_optional = costMap.emptyNeighbors(current_index_global);
       if (neighbors_optional.has_value()){
         for (std::array<int,3> next_index : neighbors_optional.value())
         {
-          next_index[0] += minXYZ[0];
-          next_index[1] += minXYZ[1];
-          next_index[2] += minXYZ[2];
+          // Convert next_index to local region frame
+          next_index[0] = next_index[0] - start_index[0] + localRegionSize/2;
+          next_index[1] = next_index[1] - start_index[1] + localRegionSize/2;
+          next_index[2] = next_index[2] - start_index[2] + localRegionSize/2;
           // std::cout << "Next: " << next_index[0] << " " 
           // << next_index[1] << " "
           // << next_index[2] << std::endl;
@@ -95,39 +129,39 @@ namespace Search{
         }
       }
     }
-
+    
+    // Make sure goal was reached by BFS, otherwise set to nullopt and return.
     if (came_from.at(goal_index) == std::array<int,3>{-1,-1,-1}){
-      return std::nullopt;
+      path = std::nullopt;
+      return;
     }
-
     // Obtain path
-    std::array<int,3> current_index = goal_index;
-    std::vector<std::array<float,3>> path;
+    path.value().clear(); //reset just in case path has waypoints in it already
+    std::array<int,3> current_index = goal_index; // start out in local region frame
     while(current_index != start_index)
     {
       if (current_index == goal_index){
-        path.push_back(goal);
+        std::cout << "safe here" << std::endl;
+        path.value().push_back(goal);
+        // std::cout << "safe here2" << std::endl;
       }
       else{
-        current_index[0] -= minXYZ[0];
-        current_index[1] -= minXYZ[1];
-        current_index[2] -= minXYZ[2];
-        std::array<float,3> current = costMap.globalToWorld(current_index);
-        path.push_back(current);
+        // convert to global index frame
+        std::array<int,3> current_index_global;
+        current_index_global[0] = current_index[0] + start_index[0] - localRegionSize/2;
+        current_index_global[1] = current_index[1] + start_index[1] - localRegionSize/2;
+        current_index_global[2] = current_index[2] + start_index[2] - localRegionSize/2;
+        std::array<float,3> current = costMap.globalToWorld(current_index_global);
+        path.value().push_back(current);
       }
       // RCLCPP_INFO(this->get_logger(), "Current: %d %d %d"
       //   , current[0], current[1], current[2]);
       std::array<int,3> prev_index = came_from.at(current_index);
       current_index = prev_index;
     }
-    path.push_back(start); // append start voxel
+    path.value().push_back(start); // append start voxel
     
-    std::reverse(path.begin(),path.end()); // start --> goal
-
-    auto endTimer = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = endTimer - startTimer;
-    std::cout << "Breadth-first search finished in " << duration.count() << " sec" << std::endl;
-    return path;
+    std::reverse(path.value().begin(),path.value().end()); // start --> goal
   }
 
 
