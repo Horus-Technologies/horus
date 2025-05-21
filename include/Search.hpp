@@ -6,8 +6,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
-using PathMap = std::unordered_map<std::array<int,3>,std::array<int,3>>;
-
 namespace Search{
 
     struct CameFrom {
@@ -48,11 +46,46 @@ namespace Search{
         }
     };
 
+
+    struct CostSoFar {
+        std::unique_ptr<float[]> _data;
+        std::array<int,3> _dims;
+
+        CostSoFar(const std::array<int,3>& dims) : _dims(dims){
+            int arraySize = dims[0] * dims[1] * dims[2];
+            _data = std::make_unique<float[]>(arraySize);
+            for (size_t i = 1; i < arraySize; ++i) {
+                _data[i] = std::numeric_limits<float>::max();
+            }
+        }
+
+        float at(const std::array<int,3>& indices){
+            return _data[flatten(indices)];
+        }
+
+        void set(const std::array<int,3>& indices, const float& cost){
+            _data[flatten(indices)] = cost;
+        }
+
+        int flatten(const std::array<int,3>& indices) const
+        {
+            return indices[0] + _dims[0]*indices[1] + _dims[0]*_dims[1]*indices[2];
+        }
+
+        std::array<int,3> unflatten(int i) const
+        {
+            return {i % _dims[0], (i / _dims[0]) % _dims[1], i / (_dims[0]*_dims[1])}; 
+        }
+    };
+
     std::optional<std::vector<std::array<float,3>>> runSearch(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal);
     std::array<float,3> findLocalGoal(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal, const int& localRegionSize);
     void runBreadthFirst(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal,
         std::optional<std::vector<std::array<float,3>>>& path, const int& localRegionSize);
+    void runAStar(const CostMap& costMap, const std::array<float,3>& start, const std::array<float,3>& goal,
+        std::optional<std::vector<std::array<float,3>>>& path, const float& localRegionSize);
     void cleanPath(const CostMap& costMap, std::vector<std::array<float,3>>& path);
+    float euclidean_distance(const std::array<float, 3>& a, const std::array<float, 3>& b);
 }
 
 // namespace std {

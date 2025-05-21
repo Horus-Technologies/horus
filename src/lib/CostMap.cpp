@@ -133,6 +133,7 @@ void CostMap::addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_m
     }
 }
 
+// Returns vector of global indices for empty neighbors.
 const std::optional<std::vector<std::array<int,3>>> CostMap::emptyNeighbors(const std::array<int,3>& position) const
 {
     std::vector<std::array<int,3>> emp_neighbors; // world coordinates of empty neighbors

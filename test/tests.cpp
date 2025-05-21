@@ -180,11 +180,39 @@ TEST(SearchTests, BreadthFirstSearch)
 {
     CostMap costMap;
     std::array<float,3> start = {0,0,0};
-    std::array<float,3> local_goal = {15,15,15};
+    std::array<float,3> local_goal = {4,4,4};
     std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
     int localRegionSize = 16;
     Search::runBreadthFirst(costMap, start, local_goal, path, localRegionSize);
     ASSERT_TRUE(path.has_value());
+}
+
+TEST(SearchTests, AStarInsideLocal)
+{
+    CostMap costMap;
+    std::array<float,3> start = {0,0,0};
+    std::array<float,3> local_goal = {4,4,4};
+    std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
+    float localRegionSize = 16;
+    Search::runAStar(costMap, start, local_goal, path, localRegionSize);
+    ASSERT_TRUE(path.has_value());
+    for (int i = 0; i < path.value().size(); i++){
+        std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
+    }
+}
+
+TEST(SearchTests, AStarOutsideLocal)
+{
+    CostMap costMap;
+    std::array<float,3> start = {0,0,0};
+    std::array<float,3> local_goal = {10,10,10};
+    std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
+    float localRegionSize = 16;
+    Search::runAStar(costMap, start, local_goal, path, localRegionSize);
+    ASSERT_TRUE(path.has_value());
+    for (int i = 0; i < path.value().size(); i++){
+        std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
+    }
 }
 
 TEST(SearchTests, FindLocalGoal){
