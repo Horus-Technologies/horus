@@ -128,10 +128,10 @@ void ssLocalPlanner::visualizePath(std::vector<std::array<float,3>>& path)
     marker.pose.orientation.w = 1.0;
     
     // Set the scale
-    const float scale = _costMap->getScale();
-    marker.scale.x = scale/2;
-    marker.scale.y = scale/2;
-    marker.scale.z = scale/2;
+    const float scale = 0.125;
+    marker.scale.x = scale;
+    marker.scale.y = scale;
+    marker.scale.z = scale;
 
     // Set the color
     marker.color.r = 0.0f;

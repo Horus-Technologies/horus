@@ -30,21 +30,6 @@ find_package(tf2_ros REQUIRED)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-# Include generated message headers
-# include_directories(${drone_tracker_message_INCLUDE_DIRSs})
-
-# Generate messages in the 'msg' folder of drone_tracker package
-# rosidl_generate_interfaces(${PROJECT_NAME}
-#   "msg/Path.msg"  # Example message file in drone_tracker package
-#   DEPENDENCIES drone_tracker_messages # Specify dependency on custom messages
-# )
-
-# Generate messages in the 'msg' folder
-# rosidl_generate_interfaces(${PROJECT_NAME}
-#   "msg/Path.msg"
-#   DEPENDENCIES std_msgs  # Add other dependencies as needed
-# )
-
 # Include Cpp "include" directory
 include_directories(include)
 
@@ -53,7 +38,6 @@ add_executable(fsm
   src/nodes/ssGlobalPlanner.cpp
   src/nodes/ssLocalPlanner.cpp
   src/nodes/ssMapper.cpp  
-  src/lib/Voxel.cpp
   src/lib/CostMap.cpp
   src/lib/Search.cpp
   src/lib/Chunk.cpp
@@ -68,76 +52,21 @@ ament_target_dependencies(fsm
   tf2_ros
 )
 
-
-# Create Cpp executable for local_planner
-# add_executable(local_planner 
-#   src/nodes/ssLocalPlanner.cpp 
-#   src/lib/Voxel.cpp
-#   src/lib/CostMap.cpp
-#   src/lib/Search.cpp
-# )
-# ament_target_dependencies(local_planner
-#   rclcpp
-#   std_msgs
-#   geometry_msgs
-#   visualization_msgs
-#   nav_msgs
-#   geographic_msgs
-#   Eigen3
-# )
-
-# find_package(planner_test REQUIRED)
-# target_link_libraries(path_planner_exe planner_test)
-# target_include_directories(path_planner_exe PUBLIC
-#   ../../../../../planner_test/include
-# )
-
 # Create Cpp executable for trajectory_controller
-# add_executable(trajectory_controller
-#   src/nodes/ssTrajectoryController.cpp
-# )
-# ament_target_dependencies(trajectory_controller
-#   rclcpp
-#   std_msgs
-#   geometry_msgs
-#   Eigen3
-#   nav_msgs
-# )
-
-# add_executable(demoBFS
-#   src/nodes/demoBFS.cpp
-#   src/lib/Voxel.cpp
-#   src/lib/CostMap.cpp
-#   src/lib/Search.cpp
-# )
-# ament_target_dependencies(demoBFS
-#   rclcpp
-#   std_msgs
-#   geometry_msgs
-#   visualization_msgs
-#   nav_msgs
-#   Eigen3
-# )
-
-# add_executable(demoVoxelization
-#   src/nodes/demoVoxelization.cpp
-#   src/lib/Voxel.cpp
-#   src/lib/CostMap.cpp
-# )
-# ament_target_dependencies(demoVoxelization
-#   rclcpp
-#   std_msgs
-#   geometry_msgs
-#   visualization_msgs
-#   sensor_msgs
-#   nav_msgs
-#   Eigen3
-# )
+add_executable(trajectory_controller
+  src/nodes/ssTrajectoryController.cpp
+)
+ament_target_dependencies(trajectory_controller
+  rclcpp
+  std_msgs
+  geometry_msgs
+  Eigen3
+  nav_msgs
+)
 
 add_executable(demoMapper
   src/nodes/demoMapper.cpp
   src/nodes/ssMapper.cpp
-  src/lib/Voxel.cpp
   src/lib/CostMap.cpp
   src/lib/Chunk.cpp
 )
@@ -166,22 +95,11 @@ target_include_directories(tests PUBLIC
 # Install Cpp executables
 install(TARGETS
   fsm
-  # trajectory_controller
-  # demoBFS
-  # demoVoxelization
+  trajectory_controller
   demoMapper
   tests
   DESTINATION lib/${PROJECT_NAME}
 )
-
-# Install Python modules
-# ament_python_install_package(${PROJECT_NAME})
-
-# # Install Python executables
-# install(PROGRAMS
-#   src/target_detector/TargetPosePublisher.py
-#   DESTINATION lib/${PROJECT_NAME}
-# )
 
 # Add line to install launch files
 install(DIRECTORY launch/
