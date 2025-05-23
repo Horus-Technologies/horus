@@ -60,7 +60,7 @@ void ssLocalPlanner::run()
   else{
     visualizePath(path.value());
     Search::cleanPath(*_costMap, path.value());
-    Search::cleanPath(*_costMap, path.value());
+    // Search::cleanPath(*_costMap, path.value());
   
     _lastPath.poses.clear();
     

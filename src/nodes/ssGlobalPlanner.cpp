@@ -31,7 +31,7 @@ ssGlobalPlanner::ssGlobalPlanner(CostMap* costMap)
     // _goals.push_back({1,15,15});
     // _goals.push_back({1,1,1});
 
-    _goals.push_back({1,1,6});
+    _goals.push_back({1,20,6});
 }
 
 void ssGlobalPlanner::run()
@@ -75,10 +75,10 @@ void ssGlobalPlanner::run_random()
     {   
         std::mt19937 gen(std::random_device{}());
         std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-        _goals[0] = {dist(gen)*40.0f, dist(gen)*80.0f, dist(gen)*15.0f};
+        _goals[0] = {dist(gen)*20.0f, dist(gen)*20.0f, dist(gen)*8.0f};
         goalPoint = {_goals[0][0], _goals[0][1], _goals[0][2]};
         while(_costMap->getVoxelState(goalPoint) == VoxelState::OCCUPIED){
-            _goals[0] = {dist(gen)*40.0f, dist(gen)*80.0f, dist(gen)*15.0f};
+            _goals[0] = {dist(gen)*20.0f, dist(gen)*20.0f, dist(gen)*8.0f};
             goalPoint = {_goals[0][0], _goals[0][1], _goals[0][2]};
         } 
     }

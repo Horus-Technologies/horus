@@ -74,8 +74,7 @@ VoxelState CostMap::getVoxelState(const std::array<float,3>& position) const
     auto p = globalToLocal(global);
     std::array<int,3> chunk = p.first;
     std::array<int,3> local = p.second;
-    // std::cout << "DESIRED CHUNK INDICES ARE " << chunk[0] << " " << chunk[1] << " " << chunk[2] << std::endl;
-    // std::cout << "ACTUAL CHUNK INDICES ARE " << _map.begin()->first[0] << " " << _map.begin()->first[1] << " " << _map.begin()->first[2] << std::endl;
+    
     // Check if chunk exists
     if (_map.find(chunk) != _map.end()){
         // Obtain local indices within chunk
@@ -84,7 +83,7 @@ VoxelState CostMap::getVoxelState(const std::array<float,3>& position) const
         return chunk_ptr->getVoxelState(local);
     }
     else{ // chunk doesn't exist
-        return VoxelState::UNKNOWN;
+        return VoxelState::EMPTY;
     }
 }
 
@@ -134,19 +133,9 @@ void CostMap::addObstacle(std::array<float,3> xyz_min, std::array<float,3> xyz_m
 }
 
 // Returns vector of global indices for empty neighbors.
-const std::optional<std::vector<std::array<int,3>>> CostMap::emptyNeighbors(const std::array<int,3>& position) const
+const std::optional<std::vector<std::array<int,3>>> CostMap::emptyNeighbors(const std::array<int,3>& global) const
 {
     std::vector<std::array<int,3>> emp_neighbors; // world coordinates of empty neighbors
-
-    auto p = globalToLocal(position);
-    std::array<int,3> chunk = p.first;
-    std::array<int,3> local = p.second;
-
-    // check if chunk doesn't exist
-    if (_map.find(chunk) == _map.end()){
-        return std::nullopt; // represents "no value"
-    }
-    // At this point, it is known that chunk exists in map
     
     const std::array<std::array<int, 3>, 6> neighborOffsets = {{
         { 1,  0,  0},  // +x
@@ -155,56 +144,32 @@ const std::optional<std::vector<std::array<int,3>>> CostMap::emptyNeighbors(cons
         { 0, -1,  0},  // -y
         { 0,  0,  1},  // +z
         { 0,  0, -1},  // -z
-    }};
-
-    // returns how chunk needs to be adjusted for neighbor voxel
-    auto chunkDelta = [&](int x, int y, int z) {
-        std::array<int,3> delta = {0,0,0};
-        if (x < 0){ delta[0] = -1;}
-        else if (x > _res-1){ delta[0] = 1;}
-
-        if (y < 0){ delta[1] = -1;}
-        else if (y > _res-1){ delta[1] = 1;}
-
-        if (z < 0){ delta[2] = -1;}
-        else if (z > _res-1){ delta[2] = 1;}
-
-        return delta;
-    };
-    
+    }};    
 
     // Loop through neighbor offsets
     for (const auto& offset : neighborOffsets) {
-        // Obtain neighbor local voxel indices
-        int nx = local[0] + offset[0];
-        int ny = local[1] + offset[1];
-        int nz = local[2] + offset[2];
+        // Obtain neighbor global voxel indices
+        std::array<int,3> global_n;
+        global_n[0] = global[0] + offset[0];
+        global_n[1] = global[1] + offset[1];
+        global_n[2] = global[2] + offset[2];
 
-        auto delta = chunkDelta(nx,ny,nz);
-        if (delta == std::array<int, 3>{0,0,0}){ // neighbor within same chunk as original voxel
-            if(_map.at(chunk).getVoxelState({nx,ny,nz}) == VoxelState::EMPTY){
-                std::array<int,3> n_global = localToGlobal(chunk,{nx,ny,nz});
-                // std::array<float,3> n_world = globalToWorld(n_global);
-                emp_neighbors.push_back(n_global);
+        auto p = globalToLocal(global_n);
+        std::array<int,3> chunk_n = p.first;
+        std::array<int,3> local_n = p.second;
+
+        if (_map.find(chunk_n) != _map.end()){
+            // neighbor is in a chunk that exists, so check to make sure voxel EMPTY
+            if(_map.at(chunk_n).getVoxelState(local_n) == VoxelState::EMPTY){
+                emp_neighbors.push_back(global_n);
             }
-        }
+        }   
         else{
-            // adjust chunk
-            std::array<int,3> new_chunk = chunk;
-            new_chunk[0] += delta[0];
-            new_chunk[1] += delta[1];
-            new_chunk[2] += delta[2];
-
-            // check if chunk exists
-            if (_map.find(new_chunk) != _map.end()){
-                if(_map.at(new_chunk).getVoxelState({nx,ny,nz}) == VoxelState::EMPTY){
-                    std::array<int,3> n_global = localToGlobal(new_chunk,{nx,ny,nz});
-                    // std::array<float,3> n_world = globalToWorld(n_global);
-                    emp_neighbors.push_back(n_global);
-                }
-            }
+            // simply add neighbor as empty, since chunk doesn't exist
+            emp_neighbors.push_back(global_n);
         }
-    }    
+    }
+
     return emp_neighbors;
 }
 
@@ -220,46 +185,76 @@ bool CostMap::checkCollision(const std::array<float,3>& point1, const std::array
     int X = voxelA[0];
     int Y = voxelA[1];
     int Z = voxelA[2];
-    int stepX = (0 < v(0)) - (0 > v(0)); // 1 for positive x direction, -1 for negative, and 0 for neutral
-    int stepY = (0 < v(1)) - (0 > v(1));
-    int stepZ = (0 < v(2)) - (0 > v(2));
-    float tMaxX;
-    float tMaxY;
-    float tMaxZ;
+    std::cout << "Point A: " << point1[0] << " " << point1[1] << " " << point1[2] << std::endl;
+    std::cout << "Point B: " << point2[0] << " " << point2[1] << " " << point2[2] << std::endl;
+    std::cout << "v: " << v[0] << " " << v[1] << " " << v[2] << std::endl;
+    std::cout << "Voxel A: " << voxelA[0] << " " << voxelA[1] << " " << voxelA[2] << std::endl;
+    std::cout << "Voxel B: " << voxelB[0] << " " << voxelB[1] << " " << voxelB[2] << std::endl;
+
+    int stepX = (v(0) > 0) ? 1 : (v(0) < 0) ? -1 : 0; // 1 for positive x direction, -1 for negative, and 0 for neutral
+    int stepY = (v(1) > 0) ? 1 : (v(1) < 0) ? -1 : 0;
+    int stepZ = (v(2) > 0) ? 1 : (v(2) < 0) ? -1 : 0;
+    float tMaxX=0;
+    float tMaxY=0;
+    float tMaxZ=0;
     std::array<float,3> centerStart = globalToWorld(voxelA);
+    std::cout << "centerStart: " << centerStart[0] << " " << centerStart[1] << " " << centerStart[2] << std::endl;
     if (v(0) == 0)
     {
         tMaxX = std::numeric_limits<float>::max();
     }
     else{
-        float xDist = centerStart[0] + _scale/2 - A[0];
-        tMaxX = (v * xDist/v(0)).norm(); // works only if ray starts from center of voxel
+        float xDist = centerStart[0] + (stepX*_scale/2) - A[0]; // distance to next x plane
+        // tMaxX = (v * xDist/v(0)).norm();
+        tMaxX = std::abs(xDist/v(0));
     }
     if (v(1) == 0)
     {
         tMaxY = std::numeric_limits<float>::max();
     }
     else{
-        float yDist = centerStart[1] + _scale/2 - A[1];
-        tMaxY = (v * yDist/v(1)).norm(); // works only if ray starts from center of voxel
+        float yDist = centerStart[1] + (stepY*_scale/2) - A[1];
+        // tMaxY = (v * yDist/v(1)).norm();
+        tMaxY = std::abs(yDist/v(1));
     }
     if (v(2) == 0)
     {
         tMaxZ = std::numeric_limits<float>::max();
     }
     else{
-        float zDist = centerStart[2] + _scale/2 - A[2];
-        tMaxZ = (v * zDist/v(2)).norm(); // works only if ray starts from center of voxel
+        float zDist = centerStart[2] + (stepZ*_scale/2) - A[2];
+        // tMaxZ = (v * zDist/v(2)).norm();
+        tMaxZ = std::abs(zDist/v(2));
     }
-    float tDeltaX = (v * (_scale)/v(0)).norm();
-    float tDeltaY = (v * (_scale)/v(1)).norm();
-    float tDeltaZ = (v * (_scale)/v(2)).norm();
+
+     auto nearlyEqual = [](float a, float b, float eps) {
+            return std::abs(a - b) < eps;
+        };
+
+    float tDeltaX = std::abs(_scale/v(0));
+    float tDeltaY = std::abs(_scale/v(1));
+    float tDeltaZ = std::abs(_scale/v(2));
 
     bool reachedVoxelB = false;
+
     int count = 0;
     // Incremental Traversal
     while(!reachedVoxelB)
     {
+        std::cout << "tMaxes: " << tMaxX << " " << tMaxY << " " << tMaxZ << std::endl;
+        // Check if all equal to each other, this handles edge case of point B in corner of voxel
+        
+        constexpr float epsilon = 1e-5f;
+        if (nearlyEqual(tMaxX, tMaxY, epsilon) && nearlyEqual(tMaxX, tMaxZ, epsilon)) {
+            reachedVoxelB = true;
+        }
+
+
+        // check if voxelB has been reached
+        if(X==voxelB[0] && Y==voxelB[1] && Z==voxelB[2]){
+            reachedVoxelB = true;
+        }
+
         if(tMaxX < tMaxY && tMaxX < tMaxZ) //tMaxX is smallest
         {   
             tMaxX = tMaxX + tDeltaX;
@@ -276,12 +271,13 @@ bool CostMap::checkCollision(const std::array<float,3>& point1, const std::array
             Z = Z + stepZ;
         }
 
+        std::cout << " X Y Z: " << X << " " << Y << " " << Z << std::endl;
         
-        if (count == 10000)
+        if (count == 1000)
         {
-            throw std::runtime_error("Voxel traversal during collision check taking too long (count = 10000)");
+            throw std::runtime_error("Voxel traversal during collision check taking too long (count = 1000)");
         }
-        // std::cout << " X Y Z: " << X << " " << Y << " " << Z << std::endl;
+        
         std::array<float,3> pos = globalToWorld({X,Y,Z});
         VoxelState voxelState = getVoxelState(pos); // INEFFICIENT
         if (voxelState == VoxelState::OCCUPIED){
@@ -289,10 +285,7 @@ bool CostMap::checkCollision(const std::array<float,3>& point1, const std::array
             return true;
         }
 
-        // check if voxelB has been reached
-        if(X==voxelB[0] && Y==voxelB[1] && Z==voxelB[2]){
-            reachedVoxelB = true;
-        }
+        
         count++;
     }
     // std::cout << "End collision check - no collision found!" << std::endl;

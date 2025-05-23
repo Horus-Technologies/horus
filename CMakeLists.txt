@@ -48,25 +48,25 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 # Include Cpp "include" directory
 include_directories(include)
 
-# add_executable(fsm 
-#   src/nodes/ssFSM.cpp
-#   src/nodes/ssGlobalPlanner.cpp
-#   src/nodes/ssLocalPlanner.cpp
-#   src/nodes/ssMapper.cpp  
-#   src/lib/Voxel.cpp
-#   src/lib/CostMap.cpp
-#   src/lib/Search.cpp
-#   src/lib/Chunk.cpp
-# )
-# ament_target_dependencies(fsm
-#   rclcpp
-#   std_msgs
-#   geometry_msgs
-#   visualization_msgs
-#   nav_msgs
-#   Eigen3
-#   tf2_ros
-# )
+add_executable(fsm 
+  src/nodes/ssFSM.cpp
+  src/nodes/ssGlobalPlanner.cpp
+  src/nodes/ssLocalPlanner.cpp
+  src/nodes/ssMapper.cpp  
+  src/lib/Voxel.cpp
+  src/lib/CostMap.cpp
+  src/lib/Search.cpp
+  src/lib/Chunk.cpp
+)
+ament_target_dependencies(fsm
+  rclcpp
+  std_msgs
+  geometry_msgs
+  visualization_msgs
+  nav_msgs
+  Eigen3
+  tf2_ros
+)
 
 
 # Create Cpp executable for local_planner
@@ -165,7 +165,7 @@ target_include_directories(tests PUBLIC
 
 # Install Cpp executables
 install(TARGETS
-  # fsm
+  fsm
   # trajectory_controller
   # demoBFS
   # demoVoxelization

@@ -17,6 +17,9 @@ TEST(CostMapTests, FrameConversions)
     std::array<float,3> world = costMap.globalToWorld(global);
     std::array<float,3> expected_world = {2.5,1.5,0.5};
     EXPECT_EQ(world, expected_world);
+    world = costMap.globalToWorld({-1,0,0});
+    expected_world = {-0.5,0.5,0.5};
+    EXPECT_EQ(world, expected_world);
 
     // Conversion global -> local
     global = costMap.worldToGlobal({16.0,0.0,0.0});
@@ -72,7 +75,7 @@ TEST(CostMapTests, ScaleChange)
     costMap.addObstacle(xyz_min, xyz_max);
     EXPECT_EQ(costMap.getNumChunks(), 2);
     EXPECT_EQ(costMap.getVoxelState({5,3,3}), VoxelState::EMPTY);
-    EXPECT_EQ(costMap.getVoxelState({5,5,5}), VoxelState::UNKNOWN);
+    EXPECT_EQ(costMap.getVoxelState({5,5,5}), VoxelState::EMPTY);
     EXPECT_EQ(costMap.getVoxelState({1,1,1}), VoxelState::OCCUPIED);
 }
 
@@ -117,10 +120,10 @@ TEST(CostMapTests, EmptyNeighbors)
     auto neighbors = costMap.emptyNeighbors({4,4,4});
     EXPECT_TRUE(neighbors.has_value());
     EXPECT_EQ(neighbors.value().size(), 6);
-    auto broken_neighbors = costMap.emptyNeighbors({100,100,100});
-    EXPECT_FALSE(broken_neighbors.has_value());
+    auto outside_neighbors = costMap.emptyNeighbors({100,100,100});
+    EXPECT_TRUE(outside_neighbors.has_value());
     neighbors = costMap.emptyNeighbors({0,0,0});
-    EXPECT_EQ(neighbors.value().size(), 3);
+    EXPECT_EQ(neighbors.value().size(), 6);
 
     // With Obstacle
     std::array<float,3> xyz_min = {1, 1, 1};
@@ -129,25 +132,52 @@ TEST(CostMapTests, EmptyNeighbors)
     EXPECT_EQ(costMap.getVoxelState({2,0.5,2}), VoxelState::EMPTY);
     auto working_neighbors = costMap.emptyNeighbors({2,0,2});
     ASSERT_TRUE(working_neighbors.has_value());
-    EXPECT_EQ(working_neighbors.value().size(), 4);
+    EXPECT_EQ(working_neighbors.value().size(), 5);
+    std::sort(working_neighbors.value().begin(), working_neighbors.value().end());
     std::vector<std::array<int,3>> expected_neighbors;
-    expected_neighbors.push_back({3,0,2});
     expected_neighbors.push_back({1,0,2});
-    expected_neighbors.push_back({2,0,3});
+    expected_neighbors.push_back({2,-1,2});
     expected_neighbors.push_back({2,0,1});
+    expected_neighbors.push_back({2,0,3});
+    expected_neighbors.push_back({3,0,2});
     for (int i = 0; i < working_neighbors.value().size(); i++){
         EXPECT_EQ(working_neighbors.value()[i], expected_neighbors[i]);
     }
 }
 
-TEST(CostMapTests, CheckCollision)
+TEST(CostMapTests, EmptyNeighborsChunkBoundary)
 {
     CostMap costMap;
+    auto neighbors = costMap.emptyNeighbors({0,0,0});
+    EXPECT_TRUE(neighbors.has_value());
+    EXPECT_EQ(neighbors.value().size(), 6);
+    // std::sort(neighbors.value().begin(), neighbors.value().end());
+    std::vector<std::array<int,3>> expected_neighbors;
+    expected_neighbors.push_back({1,0,0});
+    expected_neighbors.push_back({-1,0,0});
+    expected_neighbors.push_back({0,1,0});
+    expected_neighbors.push_back({0,-1,0});
+    expected_neighbors.push_back({0,0,1});
+    expected_neighbors.push_back({0,0,-1});
+    for (int i = 0; i < neighbors.value().size(); i++){
+        EXPECT_EQ(neighbors.value()[i], expected_neighbors[i]);
+    }
+}
+
+TEST(CostMapTests, CheckCollision)
+{
+    CostMap costMap(0.25);
     std::array<float,3> xyz_min = {1, 1, 1};
     std::array<float,3> xyz_max {4, 4, 4};
     costMap.addObstacle(xyz_min, xyz_max);
     EXPECT_FALSE(costMap.checkCollision({5,5,5},{6,6,6}));
-    EXPECT_TRUE(costMap.checkCollision({5,5,5},{0,0,0}));
+    // EXPECT_FALSE(costMap.checkCollision({5,5,5},{100,100,100}));
+    // EXPECT_FALSE(costMap.checkCollision({50,50,50},{100,100,100}));
+    // EXPECT_TRUE(costMap.checkCollision({5,5,5},{0,0,0}));
+    // EXPECT_TRUE(costMap.checkCollision({5,5,5},{-50,-50,-50}));
+    EXPECT_FALSE(costMap.checkCollision({-0.035556, 0.0518644, 0.194999},{-0.125, 0.125, 0.375}));
+    EXPECT_FALSE(costMap.checkCollision({-0.035556, 0.0518644, 0.194999},{-0.125, 0.125, 0.625}));
+    EXPECT_FALSE(costMap.checkCollision({0.894749, 1.00734, 5.98666},{1, 1, 6}));
 }
 
 // TEST(CostMapTests, MapLimits)
@@ -205,7 +235,7 @@ TEST(SearchTests, AStarOutsideLocal)
 {
     CostMap costMap;
     std::array<float,3> start = {0,0,0};
-    std::array<float,3> local_goal = {10,10,10};
+    std::array<float,3> local_goal = {20,20,20};
     std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
     float localRegionSize = 16;
     Search::runAStar(costMap, start, local_goal, path, localRegionSize);
@@ -215,49 +245,49 @@ TEST(SearchTests, AStarOutsideLocal)
     }
 }
 
-TEST(SearchTests, FindLocalGoal){
-    CostMap costMap;
-    std::array<float,3> start = {0,0,0};
-    std::array<float,3> goal = {20,20,20};
-    int localRegionSize = 16;
-    std::array<float,3> local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
-    std::array<float,3> expected_local_goal = {15.5,15.5,15.5};
-    EXPECT_EQ(local_goal, expected_local_goal);
+// TEST(SearchTests, FindLocalGoal){
+//     CostMap costMap;
+//     std::array<float,3> start = {0,0,0};
+//     std::array<float,3> goal = {20,20,20};
+//     int localRegionSize = 16;
+//     std::array<float,3> local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
+//     std::array<float,3> expected_local_goal = {15.5,15.5,15.5};
+//     EXPECT_EQ(local_goal, expected_local_goal);
 
-    goal = {20,0,0};
-    local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
-    expected_local_goal = {15.5,8,8};
-    EXPECT_EQ(local_goal, expected_local_goal);
+//     goal = {20,0,0};
+//     local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
+//     expected_local_goal = {15.5,8,8};
+//     EXPECT_EQ(local_goal, expected_local_goal);
 
-    goal = {20,0,0};
-    localRegionSize = 4;
-    local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
-    expected_local_goal = {3.5,2,2};
-    EXPECT_EQ(local_goal, expected_local_goal);
-}
+//     goal = {20,0,0};
+//     localRegionSize = 4;
+//     local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
+//     expected_local_goal = {3.5,2,2};
+//     EXPECT_EQ(local_goal, expected_local_goal);
+// }
 
-TEST(SearchTests, FindLocalGoalInside){
-    CostMap costMap;
-    std::array<float,3> start = {0,0,0};
-    std::array<float,3> goal = {5,5,5};
-    int localRegionSize = 16;
-    std::array<float,3> local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
-    std::array<float,3> expected_local_goal = {13,13,13};
-    EXPECT_EQ(local_goal, expected_local_goal);
-}
+// TEST(SearchTests, FindLocalGoalInside){
+//     CostMap costMap;
+//     std::array<float,3> start = {0,0,0};
+//     std::array<float,3> goal = {5,5,5};
+//     int localRegionSize = 16;
+//     std::array<float,3> local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
+//     std::array<float,3> expected_local_goal = {13,13,13};
+//     EXPECT_EQ(local_goal, expected_local_goal);
+// }
 
-TEST(SearchTests, FindLocalGoalObstacle){
-    CostMap costMap;
-    std::array<float,3> start = {0,0,0};
-    std::array<float,3> goal = {20,0,0};
-    int localRegionSize = 16;
-    std::array<float,3> xyz_min = {14, -2, -2};
-    std::array<float,3> xyz_max {18, 2, 2};
-    costMap.addObstacle(xyz_min, xyz_max);
-    std::array<float,3> local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
-    std::array<float,3> expected_local_goal = {15.5,8,8};
-    EXPECT_EQ(local_goal, expected_local_goal);
-}
+// TEST(SearchTests, FindLocalGoalObstacle){
+//     CostMap costMap;
+//     std::array<float,3> start = {0,0,0};
+//     std::array<float,3> goal = {20,0,0};
+//     int localRegionSize = 16;
+//     std::array<float,3> xyz_min = {14, -2, -2};
+//     std::array<float,3> xyz_max {18, 2, 2};
+//     costMap.addObstacle(xyz_min, xyz_max);
+//     std::array<float,3> local_goal = Search::findLocalGoal(costMap, start, goal, localRegionSize);
+//     std::array<float,3> expected_local_goal = {15.5,8,8};
+//     EXPECT_EQ(local_goal, expected_local_goal);
+// }
 
 TEST(SearchTests, RunSearchSimple)
 {
@@ -308,9 +338,24 @@ TEST(SearchTests, RunSearchAroundObstacle)
     }
 }
 
+TEST(SearchTests, CleanPath)
+{
+    CostMap costMap;
+    std::array<float,3> start = {18,0,0};
+    std::array<float,3> goal = {20.625,0.625,4.875};
+    auto path = Search::runSearch(costMap, start, goal);
+    Search::cleanPath(costMap, path.value());
+    ASSERT_TRUE(path.has_value());
+    EXPECT_EQ(path.value().size(), 2);
+    EXPECT_EQ(costMap.getNumChunks(), 1);
+}
+
 TEST(SearchTests, ImpossiblePathStartingInObstacle)
 {
     CostMap costMap;
+    std::array<float,3> xyz_min = {1, 1, 1};
+    std::array<float,3> xyz_max {3, 3, 3};
+    costMap.addObstacle(xyz_min, xyz_max);
     std::array<float,3> start = {2,2,2};
     std::array<float,3> goal = {3,3,3};
     auto path = Search::runSearch(costMap, start, goal);

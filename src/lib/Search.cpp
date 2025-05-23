@@ -11,12 +11,14 @@ namespace Search{
       return std::nullopt;
     }
 
-    std::optional<std::vector<std::array<float,3>>> path = std::nullopt;
+    std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
 
-    int localRegionSize = 16; // voxel count of local region cube side
+    int localRegionSize = 48; // voxel count of local region cube side
 
     runAStar(costMap,start, goal, path, localRegionSize);
-    
+    // if(path.has_value()){
+    //   cleanPath(costMap, path.value());
+    // }
 
     auto endTimer = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = endTimer - startTimer;
@@ -196,9 +198,9 @@ namespace Search{
 
     //keep track of which indices in local frame added last- for path reconstruction later
     std::array<int,3> last_local = start_local; 
-    std::cout << "goal_local: " << goal_local[0] << " " 
-      << goal_local[1] << " "
-      << goal_local[2] << std::endl;
+    // std::cout << "goal_local: " << goal_local[0] << " " 
+    //   << goal_local[1] << " "
+    //   << goal_local[2] << std::endl;
 
     while(!frontier.empty())
     {
@@ -206,9 +208,9 @@ namespace Search{
       std::array<int,3> current_local = current_pq.second;
       frontier.pop();
 
-      std::cout << "current_local: " << current_local[0] << " " 
-      << current_local[1] << " "
-      << current_local[2] << std::endl;
+      // std::cout << "current_local: " << current_local[0] << " " 
+      // << current_local[1] << " "
+      // << current_local[2] << std::endl;
 
       if (current_local == goal_local)
       {
@@ -233,6 +235,9 @@ namespace Search{
           next_local[1] = next_global[1] - (start_global[1] - localRegionSize/2);
           next_local[2] = next_global[2] - (start_global[2] - localRegionSize/2);
           
+          // std::cout << "next_local: " << next_local[0] << " " 
+          // << next_local[1] << " "
+          // << next_local[2] << std::endl;
 
           // std::array distanceFromLocalWall = {next_local}
           // check if this next voxel is outside of the local region, if it is, then simply break
@@ -249,9 +254,7 @@ namespace Search{
           // go only to unexplored empty neighbors
           if (came_from.at(next_local) == std::array<int,3>{-1,-1,-1})
           {
-            // std::cout << "next_local: " << next_local[0] << " " 
-            // << next_local[1] << " "
-            // << next_local[2] << std::endl;
+            
             // float next_cost = cost_so_far.at(current_local) + 1;
             float next_cost = euclidean_distance(start, next_world);
             // cost_so_far.set(next_local, next_cost);
@@ -269,7 +272,7 @@ namespace Search{
     
     // Obtain path
     path.value().clear(); //reset just in case path has waypoints in it already
-    std::cout << "last_local: "  << last_local[0] << ", " << last_local[1] << ", " << last_local[2] << std::endl;
+    // std::cout << "last_local: "  << last_local[0] << ", " << last_local[1] << ", " << last_local[2] << std::endl;
     std::array<int,3> current_local = last_local; // start out in local region frame
     int count = 0;
     while(current_local != start_local)
@@ -279,12 +282,12 @@ namespace Search{
       }
       else{
         // convert to global index frame
-        std::cout << "current_local: "  << current_local[0] << ", " << current_local[1] << ", " << current_local[2] << std::endl;
+        // std::cout << "current_local: "  << current_local[0] << ", " << current_local[1] << ", " << current_local[2] << std::endl;
         std::array<int,3> current_global;
         current_global[0] = current_local[0] + (start_global[0] - localRegionSize/2);
         current_global[1] = current_local[1] + (start_global[1] - localRegionSize/2);
         current_global[2] = current_local[2] + (start_global[2] - localRegionSize/2);
-        std::cout << "current_global: "  << current_global[0] << ", " << current_global[1] << ", " << current_global[2] << std::endl;
+        // std::cout << "current_global: "  << current_global[0] << ", " << current_global[1] << ", " << current_global[2] << std::endl;
         std::array<float,3> current = costMap.globalToWorld(current_global);
         path.value().push_back(current);
       }
