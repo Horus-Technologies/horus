@@ -18,43 +18,41 @@ the new plan.
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
-// #include "geographic_msgs/msg/geo_pose_stamped.hpp"
-// #include "geographic_msgs/msg/geo_pose.hpp"
 #include <geometry_msgs/msg/quaternion.hpp>
 #include "nav_msgs/msg/path.hpp"
 
-class ssTrajectoryController : public rclcpp::Node
+class TrajectoryController : public rclcpp::Node
 {
   public:
-    ssTrajectoryController();
+    TrajectoryController();
 
   private:
     void callback_command();
-    void callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp);
+    void callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr pose_stamp);
     void callback_path(const nav_msgs::msg::Path::SharedPtr path);
 
     // Publisher members
     rclcpp::TimerBase::SharedPtr _timer;
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr _publisher;
-    rclcpp::TimerBase::SharedPtr _timerDesired;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr _publisherDesired;
+    rclcpp::TimerBase::SharedPtr _timer_desired;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr _publisher_desired;
     size_t _count;
 
     // Subscriber members
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr _subscriber;
-    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _subscriberDrone;
-    std::shared_ptr<nav_msgs::msg::Path> _lastPath{};
-    geometry_msgs::msg::Pose _currentPoseDrone;
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _subscriber_drone;
+    std::shared_ptr<nav_msgs::msg::Path> _last_path{};
+    geometry_msgs::msg::Pose _current_pose_drone;
 
     // General members
-    double _timeStartFollow;
-    bool _pathStarted = false;
-    bool _pathComplete = false;
-    bool _pathAvail = false;
-    int _currentPoseIndex; // index of the current pose drone is heading towards
+    double _time_start_follow;
+    bool _path_started = false;
+    bool _path_complete = false;
+    bool _path_avail = false;
+    int _current_pose_index; // index of the current pose drone is heading towards
     float _s_offset;
 
-    Eigen::Vector3d prevDesiredPose;
-    Eigen::Vector3d prevCurrentPose;
-    float prevDesiredYaw;
+    Eigen::Vector3d _prev_desired_pose;
+    Eigen::Vector3d _prev_current_pose;
+    float _prev_desired_yaw;
 };

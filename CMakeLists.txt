@@ -34,11 +34,11 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(include)
 
 add_executable(fsm 
-  src/nodes/ssFSM.cpp
-  src/nodes/ssGlobalPlanner.cpp
-  src/nodes/ssLocalPlanner.cpp
-  src/nodes/ssMapper.cpp  
-  src/lib/CostMap.cpp
+  src/nodes/FSM.cpp
+  src/nodes/GlobalPlanner.cpp
+  src/nodes/LocalPlanner.cpp
+  src/nodes/Mapper.cpp  
+  src/lib/VoxelGrid.cpp
   src/lib/Search.cpp
   src/lib/Chunk.cpp
 )
@@ -54,7 +54,7 @@ ament_target_dependencies(fsm
 
 # Create Cpp executable for trajectory_controller
 add_executable(trajectory_controller
-  src/nodes/ssTrajectoryController.cpp
+  src/nodes/TrajectoryController.cpp
 )
 ament_target_dependencies(trajectory_controller
   rclcpp
@@ -66,8 +66,8 @@ ament_target_dependencies(trajectory_controller
 
 add_executable(demoMapper
   src/nodes/demoMapper.cpp
-  src/nodes/ssMapper.cpp
-  src/lib/CostMap.cpp
+  src/nodes/Mapper.cpp
+  src/lib/VoxelGrid.cpp
   src/lib/Chunk.cpp
 )
 ament_target_dependencies(demoMapper
@@ -85,7 +85,7 @@ find_package(ament_cmake_gtest REQUIRED)
 ament_add_gtest(tests 
   test/tests.cpp 
   src/lib/Chunk.cpp 
-  src/lib/CostMap.cpp
+  src/lib/VoxelGrid.cpp
   src/lib/Search.cpp)
 target_include_directories(tests PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

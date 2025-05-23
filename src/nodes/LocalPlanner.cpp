@@ -1,9 +1,9 @@
-#include "ssLocalPlanner.hpp"
+#include "LocalPlanner.hpp"
 
 using namespace std::chrono_literals;
 
-ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
-: Node("ssLocalPlanner"), _count(0), _costMap(costMap)
+LocalPlanner::LocalPlanner(VoxelGrid* voxel_grid)
+: Node("LocalPlanner"), _count(0), _voxel_grid(voxel_grid)
 {
 
     // Callback group
@@ -12,23 +12,15 @@ ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
     options.callback_group = exclusive_group;
     
     // Subscribing
-    // rclcpp::QoS qos(rclcpp::KeepLast(1)); 
-    // qos.best_effort();
-    // _subscriberDrone = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-    // "/ap/pose/filtered", qos,
-    // [this](const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp) {
-    //     this->callback_drone(poseStamp);
-    // });
-
     rclcpp::QoS qos(rclcpp::KeepLast(10)); 
     qos.best_effort();
-    _subscriberDrone = this->create_subscription<nav_msgs::msg::Odometry>(
+    _subscriber_drone = this->create_subscription<nav_msgs::msg::Odometry>(
     "/odometry", qos,
     [this](const nav_msgs::msg::Odometry::SharedPtr odometry) {
         this->callback_drone(odometry);
     },options);
 
-    _subscriberGoal = this->create_subscription<std_msgs::msg::Float32MultiArray>(
+    _subscriber_goal = this->create_subscription<std_msgs::msg::Float32MultiArray>(
       "/global_goal", 10,
       [this](const std_msgs::msg::Float32MultiArray::SharedPtr goal) {
           this->callback_goal(goal);
@@ -36,38 +28,38 @@ ssLocalPlanner::ssLocalPlanner(CostMap* costMap)
 
     // Publishing
     _publisher = this->create_publisher<nav_msgs::msg::Path>("waypoints", 10); // waypoints with stamped pose
-    _timer = this->create_wall_timer(500ms, std::bind(&ssLocalPlanner::run, this));
+    _timer = this->create_wall_timer(500ms, std::bind(&LocalPlanner::run, this));
     _publisher_path_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("path/markers", 10);
 
 }
 
-    // Publisher function for path - on a timer callback
-void ssLocalPlanner::run()
+// Publisher function for path - on a timer callback
+void LocalPlanner::run()
 {
   // Update _start with drone pose in map frame
   _start = {
-    _lastPoseDrone.pose.pose.position.x,
-    _lastPoseDrone.pose.pose.position.y,
-    _lastPoseDrone.pose.pose.position.z
+    _last_pose_drone.pose.pose.position.x,
+    _last_pose_drone.pose.pose.position.y,
+    _last_pose_drone.pose.pose.position.z
   };
   
   RCLCPP_INFO(this->get_logger(), "Start: %f %f %f"
   , _start[0], _start[1], _start[2]);
-  auto path = Search::runSearch(*_costMap, _start, _goal);
+  auto path = Search::run_search(*_voxel_grid, _start, _goal);
   if (!path.has_value()){
     RCLCPP_WARN(this->get_logger(), "Search unable to find path to goal!");
   }
   else{
-    visualizePath(path.value());
-    Search::cleanPath(*_costMap, path.value());
-    // Search::cleanPath(*_costMap, path.value());
+    visualize_path(path.value());
+    Search::clean_path(*_voxel_grid, path.value());
+    Search::clean_path(*_voxel_grid, path.value()); // 2nd clean_path() is for certain edge cases
   
-    _lastPath.poses.clear();
+    _last_path.poses.clear();
     
     // compute point on _start voxel that intersects with first 
-    double totalPathTime = 0.0;
+    double total_path_time = 0.0;
     int i = 0;
-    std::array<float,3> prevPoint = path.value().front();
+    std::array<float,3> prev_point = path.value().front();
     for(std::array<float,3> point : path.value())
     {
       auto pose = geometry_msgs::msg::PoseStamped();
@@ -80,41 +72,40 @@ void ssLocalPlanner::run()
       pose.pose.orientation.w = 0.710343;
       if (i>0){
         // compute timing for path
-        totalPathTime = totalPathTime + 1000 * sqrt(
-          pow(pose.pose.position.x - prevPoint[0], 2) +
-          pow(pose.pose.position.y - prevPoint[1], 2) +
-          pow(pose.pose.position.z - prevPoint[2], 2));
-        pose.header.stamp.sec = static_cast<int32_t>(totalPathTime);
+        total_path_time = total_path_time + 1000 * sqrt(
+          pow(pose.pose.position.x - prev_point[0], 2) +
+          pow(pose.pose.position.y - prev_point[1], 2) +
+          pow(pose.pose.position.z - prev_point[2], 2));
+        pose.header.stamp.sec = static_cast<int32_t>(total_path_time);
       }
       else{
         // start time at 0 for first waypoint
         pose.header.stamp.sec = 0.0;
       }
   
-      _lastPath.poses.push_back(pose);
+      _last_path.poses.push_back(pose);
       i++;
-      prevPoint = point;
+      prev_point = point;
     }
     
-    _lastPath.header.stamp = this->now();
-    _lastPath.header.frame_id = "odom";
-    _publisher->publish(_lastPath);
+    _last_path.header.stamp = this->now();
+    _last_path.header.frame_id = "odom";
+    _publisher->publish(_last_path);
   }
-
 }
 
-void ssLocalPlanner::visualizePath(std::vector<std::array<float,3>>& path)
+void LocalPlanner::visualize_path(std::vector<std::array<float,3>>& path)
 {
   visualization_msgs::msg::MarkerArray path_markers;
-  int markerId = 0;
+  int marker_id = 0;
   for (std::array<float,3> pos : path)
   {
     visualization_msgs::msg::Marker marker;
     marker.header.frame_id = "odom";
     marker.header.stamp = this->get_clock()->now();
     marker.ns = "path_markers";
-    marker.id = markerId;
-    markerId++;
+    marker.id = marker_id;
+    marker_id++;
     marker.type = visualization_msgs::msg::Marker::SPHERE;
     marker.action = visualization_msgs::msg::Marker::ADD;
 
@@ -145,19 +136,17 @@ void ssLocalPlanner::visualizePath(std::vector<std::array<float,3>>& path)
   _publisher_path_markers->publish(path_markers);
 }
 
-void ssLocalPlanner::callback_drone(const nav_msgs::msg::Odometry::SharedPtr odometry)
+void LocalPlanner::callback_drone(const nav_msgs::msg::Odometry::SharedPtr odometry)
 {
-  // std::lock_guard<std::mutex> lock(_mutex);
-  _lastPoseDrone = *odometry; // odom frame
+  _last_pose_drone = *odometry; // odom frame
   // RCLCPP_INFO(this->get_logger(),"Drone Pose Received in odom frame: %f %f %f", 
-  // _lastPoseDrone.pose.pose.position.x,
-  // _lastPoseDrone.pose.pose.position.y,
-  // _lastPoseDrone.pose.pose.position.z);
+  // _last_pose_drone.pose.pose.position.x,
+  // _last_pose_drone.pose.pose.position.y,
+  // _last_pose_drone.pose.pose.position.z);
 }
 
-void ssLocalPlanner::callback_goal(const std_msgs::msg::Float32MultiArray::SharedPtr goal)
+void LocalPlanner::callback_goal(const std_msgs::msg::Float32MultiArray::SharedPtr goal)
 {
-  // std::lock_guard<std::mutex> lock(_mutex);
   std::vector<float> goalData = goal->data;
   _goal = {goalData[0],goalData[1],goalData[2]};
 

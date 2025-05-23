@@ -2,7 +2,7 @@
 #ifndef GLOBAL_PLANNER_H
 #define GLOBAL_PLANNER_H
 
-#include "CostMap.hpp"
+#include "VoxelGrid.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
@@ -14,25 +14,25 @@
 #include <cstdlib>
 #include <random>
 
-class ssGlobalPlanner : public rclcpp::Node
+class GlobalPlanner : public rclcpp::Node
 {
     public:
-        ssGlobalPlanner(CostMap* costMap);
+        GlobalPlanner(VoxelGrid* voxel_grid);
 
     private:
         void run();
         void run_random();
-        void callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr poseStamp);
+        void callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr pose_stamp);
 
         rclcpp::TimerBase::SharedPtr _timer;
-        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr _publisherGoal;
-        rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _subscriberDrone;
-        geometry_msgs::msg::PoseStamped _lastPoseDrone;
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr _publisher_goal;
+        rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _subscriber_drone;
+        geometry_msgs::msg::PoseStamped _last_pose_drone;
 
-        CostMap* _costMap;
-        bool _planComplete = false;
+        VoxelGrid* _voxel_grid;
+        bool _plan_complete = false;
         std::vector<std::vector<float>> _goals;
-        int _currentGoalIndex;
+        int _current_goal_index;
 };
 
 #endif // GLOBAL_PLANNER_H

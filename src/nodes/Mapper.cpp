@@ -1,9 +1,9 @@
-#include "ssMapper.hpp"
+#include "Mapper.hpp"
 
 using namespace std::chrono_literals;
 
-ssMapper::ssMapper(CostMap* costMap)
-: Node("ssMapper"), _count(0), _costMap(costMap)
+Mapper::Mapper(VoxelGrid* voxel_grid)
+: Node("Mapper"), _count(0), _voxel_grid(voxel_grid)
 {   
     // Callback group
     auto exclusive_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -27,40 +27,37 @@ ssMapper::ssMapper(CostMap* costMap)
 
     // Timer
     _timer = this->create_wall_timer(
-        500ms, std::bind(&ssMapper::run, this));
+        500ms, std::bind(&Mapper::run, this));
 
     // Publishers
     _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
 }
 
-void ssMapper::run()
+void Mapper::run()
 {
-    if (_pointsReceived && _poseReceived){
+    if (_points_received && _pose_received){
         // transformBroadcast();
-        processPoints();
-        visualizeCostMap();
+        process_points();
+        visualize_grid();
     }
 }
 
-void ssMapper::callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
+void Mapper::callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
     std::lock_guard<std::mutex> lock(_points_mutex);
     _points_buffer.push_front(points);
 
     if (_points_buffer.size() > 20){
         _points_buffer.pop_back();
     }
-    if (!_pointsReceived){
-        _pointsReceived = true;
-        _pointStartTime = rclcpp::Time(points->header.stamp).seconds();
+    if (!_points_received){
+        _points_received = true;
+        _points_start_time = rclcpp::Time(points->header.stamp).seconds();
     }
-    double pointSec = rclcpp::Time(points->header.stamp).seconds();
-    // RCLCPP_INFO(this->get_logger(),"Point Received with Timestamp: %f", 
-    // pointSec);
 
     // RCLCPP_INFO(this->get_logger(),"Points added to buffer. Buffer of size: %ld", _points_buffer.size());
 }
 
-void ssMapper::callback_pose(const nav_msgs::msg::Odometry::SharedPtr odometry){
+void Mapper::callback_pose(const nav_msgs::msg::Odometry::SharedPtr odometry){
     std::lock_guard<std::mutex> lock(_points_mutex);
     _position[0] = odometry->pose.pose.position.x;
     _position[1] = odometry->pose.pose.position.y;
@@ -71,9 +68,9 @@ void ssMapper::callback_pose(const nav_msgs::msg::Odometry::SharedPtr odometry){
     _orientation.z() = odometry->pose.pose.orientation.z;
     _orientation.w() = odometry->pose.pose.orientation.w;
 
-    if (!_poseReceived){
-        _poseReceived = true;
-        _poseStartTime = rclcpp::Time(odometry->header.stamp).seconds();
+    if (!_pose_received){
+        _pose_received = true;
+        _pose_start_time = rclcpp::Time(odometry->header.stamp).seconds();
     }
 
     RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
@@ -81,42 +78,42 @@ void ssMapper::callback_pose(const nav_msgs::msg::Odometry::SharedPtr odometry){
     _position[1],
     _position[2]);
 
-    double poseSec = rclcpp::Time(odometry->header.stamp).seconds();
+    double pose_sec = rclcpp::Time(odometry->header.stamp).seconds();
 
     RCLCPP_INFO(this->get_logger(),"Drone Pose Updated with Timestamp: %f", 
-    poseSec - _poseStartTime);
+    pose_sec - _pose_start_time);
 
     // Match pose to points by timestamp and update _points
-    findBestPointsMatch(rclcpp::Time(odometry->header.stamp));
+    find_best_points_match(rclcpp::Time(odometry->header.stamp));
 
-    double pointSec = rclcpp::Time(_points.header.stamp).seconds();
+    double point_sec = rclcpp::Time(_points.header.stamp).seconds();
     RCLCPP_INFO(this->get_logger(),"Point Updated with Timestamp: %f", 
-    pointSec - _pointStartTime);
+    point_sec - _points_start_time);
 }
 
-void ssMapper::findBestPointsMatch(rclcpp::Time poseTime){
+void Mapper::find_best_points_match(rclcpp::Time poseTime){
     // Iterate through points buffer to and find the best match by timestamp
-    sensor_msgs::msg::PointCloud2::SharedPtr bestPoint;
-    double smallestTimeDiff = std::numeric_limits<double>::max();
+    sensor_msgs::msg::PointCloud2::SharedPtr best_point;
+    double smallest_time_diff = std::numeric_limits<double>::max();
     for (const sensor_msgs::msg::PointCloud2::SharedPtr& point : _points_buffer)
     {
-        rclcpp::Time pointTime(point->header.stamp);
-        double diff = std::abs((poseTime - pointTime).seconds()) + _pointStartTime - _poseStartTime;
-        if(diff < smallestTimeDiff){
-            smallestTimeDiff = diff;
-            bestPoint = point;
+        rclcpp::Time point_time(point->header.stamp);
+        double diff = std::abs((poseTime - point_time).seconds()) + _points_start_time - _pose_start_time;
+        if(diff < smallest_time_diff){
+            smallest_time_diff = diff;
+            best_point = point;
         }
     }
-    if (bestPoint) {
-        _points = *bestPoint;
+    if (best_point) {
+        _points = *best_point;
     } else {
         RCLCPP_WARN(this->get_logger(), "No valid PointCloud2 found in buffer.");
         // handle this case appropriately
     }
 }
 
-void ssMapper::processPoints(){
-    auto startTimer = std::chrono::high_resolution_clock::now();
+void Mapper::process_points(){
+    auto start_timer = std::chrono::high_resolution_clock::now();
     std::lock_guard<std::mutex> lock(_points_mutex);
     sensor_msgs::PointCloud2Iterator<float> iter_x(_points, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(_points, "y");
@@ -126,54 +123,54 @@ void ssMapper::processPoints(){
     for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
         //rotate points so they are aligned with robot orientation
         
-        Eigen::Vector3f tempPoint(*iter_x, *iter_y, *iter_z);
-        tempPoint = R*tempPoint;
+        Eigen::Vector3f temp_point(*iter_x, *iter_y, *iter_z);
+        temp_point = R*temp_point;
 
         // offset points so they are aligned with current robot position
-        tempPoint[0] += _position[0];
-        tempPoint[1] += _position[1];
-        tempPoint[2] += _position[2];
+        temp_point[0] += _position[0];
+        temp_point[1] += _position[1];
+        temp_point[2] += _position[2];
 
-        _costMap->setVoxelState({tempPoint[0], tempPoint[1], tempPoint[2]}, VoxelState::OCCUPIED);
+        _voxel_grid->set_voxel_state({temp_point[0], temp_point[1], temp_point[2]}, VoxelState::OCCUPIED);
             
-        // inflateRecursivelyFromIndex(indices, 0, 2);
+        // inflate_recursively_from_index(indices, 0, 2);
     }
 
-    auto endTimer = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = endTimer - startTimer;
+    auto end_timer = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end_timer - start_timer;
     RCLCPP_INFO(this->get_logger(),"Points processed in %f sec",duration.count());
 }
 
-// void ssMapper::inflateRecursivelyFromIndex(std::array<int,3> indices, int counter, int maxIterations)
+// void Mapper::inflate_recursively_from_index(std::array<int,3> indices, int counter, int maxIterations)
 // {
 //     if (counter > maxIterations){
 //         return;
 //     }
-//     std::vector<int> neighbors = _costMap->emptyNeighbors(_costMap->flatten(indices));
+//     std::vector<int> neighbors = _voxel_grid->emptyNeighbors(_voxel_grid->flatten(indices));
 //     for (int i : neighbors){
-//         _costMap->setVoxelStateByIndices(_costMap->unflatten(i), VoxelState::OCCUPIED);
-//         inflateRecursivelyFromIndex(_costMap->unflatten(i), counter+1, maxIterations);
+//         _voxel_grid->setVoxelStateByIndices(_voxel_grid->unflatten(i), VoxelState::OCCUPIED);
+//         inflate_recursively_from_index(_voxel_grid->unflatten(i), counter+1, maxIterations);
 //     }
 // }
 
-void ssMapper::visualizeCostMap()
+void Mapper::visualize_grid()
 {
-    auto startTimer = std::chrono::high_resolution_clock::now();
+    auto start_timer = std::chrono::high_resolution_clock::now();
     visualization_msgs::msg::MarkerArray marker_array;
-    int markerId = 0;
+    int marker_id = 0;
 
-    _costMap->forEachVoxel([&](float x, float y, float z) {
+    _voxel_grid->for_each_voxel([&](float x, float y, float z) {
         // RCLCPP_INFO(this->get_logger(),"Voxel at (%f, %f, %f)",x,y,z);
 
-        VoxelState state = _costMap->getVoxelState({x,y,z});
+        VoxelState state = _voxel_grid->get_voxel_state({x,y,z});
         if (state == VoxelState::OCCUPIED)
         {
             visualization_msgs::msg::Marker marker;
             marker.header.frame_id = "odom";
             marker.header.stamp = this->get_clock()->now();
             marker.ns = "markers";
-            marker.id = markerId;
-            markerId++;
+            marker.id = marker_id;
+            marker_id++;
             marker.type = visualization_msgs::msg::Marker::CUBE;
             marker.action = visualization_msgs::msg::Marker::ADD;
 
@@ -187,7 +184,7 @@ void ssMapper::visualizeCostMap()
             marker.pose.orientation.w = 1.0;
             
             // Set the scale
-            const double scale = _costMap->getScale();
+            const double scale = _voxel_grid->get_scale();
             marker.scale.x = scale;
             marker.scale.y = scale;
             marker.scale.z = scale;
@@ -204,8 +201,8 @@ void ssMapper::visualizeCostMap()
     });
 
     _publisher_map_markers->publish(marker_array);
-    auto endTimer = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = endTimer - startTimer;
+    auto end_timer = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end_timer - start_timer;
     RCLCPP_INFO(this->get_logger(),"Map markers publish finished in %f sec",duration.count());
 }
     

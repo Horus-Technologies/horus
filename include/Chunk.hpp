@@ -17,8 +17,8 @@ class Chunk{
     public:
         Chunk();
         Chunk(int res);
-        VoxelState getVoxelState(std::array<int,3> ind) const;
-        void setVoxelState(std::array<int,3> ind, VoxelState state);
+        VoxelState get_voxel_state(std::array<int,3> ind) const;
+        void set_voxel_state(std::array<int,3> ind, VoxelState state);
         
     private:
         int flatten(const std::array<int,3>& indices) const;

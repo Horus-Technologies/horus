@@ -5,7 +5,7 @@ Mapper node for voxelization of a point cloud from Realsense Camera
 #ifndef MAPPER_H
 #define MAPPER_H
 
-#include "CostMap.hpp"
+#include "VoxelGrid.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <visualization_msgs/msg/marker_array.hpp>
 #include "nav_msgs/msg/odometry.hpp"
@@ -22,19 +22,19 @@ Mapper node for voxelization of a point cloud from Realsense Camera
 
 using namespace std::chrono_literals;
 
-class ssMapper : public rclcpp::Node
+class Mapper : public rclcpp::Node
 {
     public:
-        ssMapper(CostMap* costMap);
+        Mapper(VoxelGrid* voxel_grid);
 
     private:
         void run();
         void callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points);
-        void callback_pose(const nav_msgs::msg::Odometry::SharedPtr poseStamp);
-        void findBestPointsMatch(rclcpp::Time poseTime);
-        void processPoints();
-        void inflateRecursivelyFromIndex(std::array<int,3> indices, int counter, int maxIterations);
-        void visualizeCostMap();
+        void callback_pose(const nav_msgs::msg::Odometry::SharedPtr pose_stamp);
+        void find_best_points_match(rclcpp::Time pose_time);
+        void process_points();
+        // void inflate_recursively_from_index(std::array<int,3> indices, int counter, int max_iterations);
+        void visualize_grid();
 
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr _subscriber_points;
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr _subscriber_pose;
@@ -43,17 +43,17 @@ class ssMapper : public rclcpp::Node
         rclcpp::TimerBase::SharedPtr _timer_broadcast;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_map_markers;
 
-        CostMap* _costMap;
+        VoxelGrid* _voxel_grid;
         sensor_msgs::msg::PointCloud2 _points;
         Eigen::Vector3f _position;
         Eigen::Quaternionf _orientation;
         int _count;
-        bool _pointsReceived = false;
-        bool _poseReceived = false;
+        bool _points_received = false;
+        bool _pose_received = false;
         std::deque<sensor_msgs::msg::PointCloud2::SharedPtr> _points_buffer;
-        double _poseStartTime;
-        double _pointStartTime;
-        int _markerId = 0;
+        double _pose_start_time;
+        double _points_start_time;
+        int _marker_id = 0;
 
         std::mutex _points_mutex;
 };

@@ -1,11 +1,11 @@
-#include "ssMapper.hpp"
+#include "Mapper.hpp"
 
 int main(int argc, char *argv[])
 {
-    CostMap costMap(0.25);
+    VoxelGrid voxel_grid(0.25);
 
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<ssMapper>(&costMap));
+    rclcpp::spin(std::make_shared<Mapper>(&voxel_grid));
     rclcpp::shutdown();
     return 0;
 }
