@@ -45,6 +45,7 @@ class TrajectoryController : public rclcpp::Node
     geometry_msgs::msg::Pose _current_pose_drone;
 
     // General members
+    double s = 0;
     double _time_start_follow;
     bool _path_started = false;
     bool _path_complete = false;

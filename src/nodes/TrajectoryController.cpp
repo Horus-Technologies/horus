@@ -31,23 +31,21 @@ void TrajectoryController::callback_command()
   double now = _count * 0.01; // sec
   if (_path_avail){
       // Get relative time from start of following
-      float speed_multiplier = 0.75;
-      
-      double t = (now - _time_start_follow)*speed_multiplier; // sec
+      float speed_multiplier = 1;
+      double dt = 0.01;
+      // double t = (now - _time_start_follow)*speed_multiplier; // sec
       float segment_duration = 0; //ms
-      double s = 0;
 
-      if (_last_path->poses.size() > 1){
+      if (_last_path->poses.size() > 2){
         segment_duration = _last_path->poses[_current_pose_index].header.stamp.sec
         - _last_path->poses[_current_pose_index-1].header.stamp.sec;
-        if (_current_pose_index == 1){s = s + _s_offset;} 
       }
       else{
         // situation where path is composed only of the final pose
         segment_duration = 3000;
       }
-      
-      s = s + t/(segment_duration/1000);
+      std::cout << "segment duration: " << segment_duration << std::endl;
+      s = s + dt * speed_multiplier/(segment_duration/1000); // need to normalize by segment duration/distance
       
       // reaching s=1 means need to select next pose as target or signal path completed
       if (s>=1.0){
@@ -57,9 +55,12 @@ void TrajectoryController::callback_command()
         else{ // switch to next segment of path
           _current_pose_index = _current_pose_index + 1;
           _time_start_follow = now;
+          std::cout << "switch to next segment" << std::endl;
           s = 0;
         }
       }
+
+      std::cout << "s: " << s <<std::endl;
       
       Eigen::Vector3d vec;
       Eigen::Vector3d desired_pose_vec;

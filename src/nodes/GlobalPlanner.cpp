@@ -24,7 +24,7 @@ GlobalPlanner::GlobalPlanner(VoxelGrid* voxel_grid)
 
     _timer = this->create_wall_timer(20ms, std::bind(&GlobalPlanner::run_random, this));
 
-    _goals.push_back({1,20,6});
+    _goals.push_back({0,20,4});
 }
 
 void GlobalPlanner::run()
