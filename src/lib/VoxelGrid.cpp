@@ -237,11 +237,13 @@ bool VoxelGrid::check_collision(const std::array<float,3>& point1, const std::ar
         constexpr float epsilon = 1e-5f;
         if (nearly_equal(t_max_x, t_max_y, epsilon) && nearly_equal(t_max_x, t_max_z, epsilon)) {
             reached_voxel_b = true;
+            break;
         }
 
         // check if voxel_b has been reached
         if(x==voxel_b[0] && y==voxel_b[1] && z==voxel_b[2]){
             reached_voxel_b = true;
+            break;
         }
 
         if(t_max_x < t_max_y && t_max_x < t_max_z) //t_max_x is smallest
@@ -264,10 +266,11 @@ bool VoxelGrid::check_collision(const std::array<float,3>& point1, const std::ar
         {
             throw std::runtime_error("Voxel traversal during collision check taking too long (count = 1000)");
         }
-        
         std::array<float,3> pos = global_to_world({x,y,z});
+        std::cout << "world pos: " << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
         VoxelState voxel_state = get_voxel_state(pos);
         if (voxel_state == VoxelState::OCCUPIED){
+            std::cout << "COLLISION FOUND" << std::endl;
             return true;
         }
         

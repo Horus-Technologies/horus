@@ -131,7 +131,10 @@ void Mapper::process_points(){
         temp_point[1] += _position[1];
         temp_point[2] += _position[2];
 
-        _voxel_grid->set_voxel_state({temp_point[0], temp_point[1], temp_point[2]}, VoxelState::OCCUPIED);
+        // avoid making floor voxels for performance
+        if (temp_point[2]>0){
+            _voxel_grid->set_voxel_state({temp_point[0], temp_point[1], temp_point[2]}, VoxelState::OCCUPIED);
+        }
         
         // std::array<int,3> global = _voxel_grid->world_to_global({temp_point[0], temp_point[1], temp_point[2]});
         // inflate_recursively_from_index(global, 0, 2);

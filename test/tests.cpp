@@ -180,6 +180,15 @@ TEST(VoxelGridTests, CheckCollision)
     EXPECT_FALSE(voxel_grid.check_collision({0.894749, 1.00734, 5.98666},{1, 1, 6}));
 }
 
+TEST(VoxelGridTests, CheckCollisionHeadOn)
+{
+    VoxelGrid voxel_grid;
+    std::array<float,3> start = {0.5,0.5,0.5};
+    std::array<float,3> goal = {4.5,0.5,0.5};
+    voxel_grid.set_voxel_state({5.5,0.5,0.5}, VoxelState::OCCUPIED);
+    EXPECT_FALSE(voxel_grid.check_collision(start,goal));
+}
+
 // TEST(VoxelGridTests, MapLimits)
 // {
 //     VoxelGrid voxel_grid;
@@ -226,9 +235,9 @@ TEST(SearchTests, AStarInsideLocal)
     float local_region_size = 16;
     Search::run_a_star(voxel_grid, start, local_goal, path, local_region_size);
     ASSERT_TRUE(path.has_value());
-    for (int i = 0; i < path.value().size(); i++){
-        std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
-    }
+    // for (int i = 0; i < path.value().size(); i++){
+    //     std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
+    // }
 }
 
 TEST(SearchTests, AStarOutsideLocal)
@@ -240,9 +249,9 @@ TEST(SearchTests, AStarOutsideLocal)
     float local_region_size = 16;
     Search::run_a_star(voxel_grid, start, local_goal, path, local_region_size);
     ASSERT_TRUE(path.has_value());
-    for (int i = 0; i < path.value().size(); i++){
-        std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
-    }
+    // for (int i = 0; i < path.value().size(); i++){
+    //     std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
+    // }
 }
 
 TEST(SearchTests, RunSearchSimple)
@@ -295,6 +304,25 @@ TEST(SearchTests, RunSearchAroundObstacle)
 }
 
 TEST(SearchTests, CleanPath)
+{
+    VoxelGrid voxel_grid;
+    std::array<float,3> start = {0.5,0.5,0.5};
+    std::array<float,3> goal = {10.5,0.5,0.5};
+    voxel_grid.set_voxel_state({5.5,0.5,0.5}, VoxelState::OCCUPIED);
+    voxel_grid.set_voxel_state({11.5,0.5,0.5}, VoxelState::OCCUPIED);
+    voxel_grid.set_voxel_state({10.5,-0.5,0.5}, VoxelState::OCCUPIED);
+    auto path = Search::run_search(voxel_grid, start, goal);
+    EXPECT_EQ(path.value().size(), 10);
+    Search::clean_path(voxel_grid, path.value());
+    ASSERT_TRUE(path.has_value());
+    EXPECT_EQ(path.value().size(), 2);
+    EXPECT_EQ(voxel_grid.get_num_chunks(), 1);
+    for (int i = 0; i < path.value().size(); i++){
+        std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
+    }
+}
+
+TEST(SearchTests, CleanPathOutsideChunk)
 {
     VoxelGrid voxel_grid;
     std::array<float,3> start = {18,0,0};
