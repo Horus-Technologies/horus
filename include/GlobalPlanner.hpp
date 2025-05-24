@@ -23,9 +23,11 @@ class GlobalPlanner : public rclcpp::Node
         void run();
         void run_random();
         void callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr pose_stamp);
+        void visualize_path(std::vector<std::vector<float>>& path);
 
         rclcpp::TimerBase::SharedPtr _timer;
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr _publisher_goal;
+        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_markers;
         rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _subscriber_drone;
         geometry_msgs::msg::PoseStamped _last_pose_drone;
 

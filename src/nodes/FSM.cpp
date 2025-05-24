@@ -2,7 +2,7 @@
 
 int main(int argc, char * argv[])
 {
-  VoxelGrid voxel_grid(0.25);
+  VoxelGrid voxel_grid(0.5);
 
   rclcpp::init(argc, argv);
   auto mapper = std::make_shared<Mapper>(&voxel_grid);

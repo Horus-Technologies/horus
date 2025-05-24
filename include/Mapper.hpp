@@ -33,7 +33,7 @@ class Mapper : public rclcpp::Node
         void callback_pose(const nav_msgs::msg::Odometry::SharedPtr pose_stamp);
         void find_best_points_match(rclcpp::Time pose_time);
         void process_points();
-        // void inflate_recursively_from_index(std::array<int,3> indices, int counter, int max_iterations);
+        void inflate_recursively_from_index(std::array<int,3> indices, int counter, int max_iterations);
         void visualize_grid();
 
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr _subscriber_points;

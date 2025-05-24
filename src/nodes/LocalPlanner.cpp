@@ -27,9 +27,9 @@ LocalPlanner::LocalPlanner(VoxelGrid* voxel_grid)
       },options);
 
     // Publishing
-    _publisher = this->create_publisher<nav_msgs::msg::Path>("waypoints", 10); // waypoints with stamped pose
+    _publisher = this->create_publisher<nav_msgs::msg::Path>("/local_plan/clean_path", 10); // waypoints with stamped pose
     _timer = this->create_wall_timer(500ms, std::bind(&LocalPlanner::run, this));
-    _publisher_path_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("path/markers", 10);
+    _publisher_raw = this->create_publisher<visualization_msgs::msg::MarkerArray>("/local_plan/raw_markers", 10);
 
 }
 
@@ -51,6 +51,10 @@ void LocalPlanner::run()
   }
   else{
     visualize_path(path.value());
+    Search::clean_path(*_voxel_grid, path.value());
+    Search::clean_path(*_voxel_grid, path.value());
+    Search::clean_path(*_voxel_grid, path.value());
+    Search::clean_path(*_voxel_grid, path.value());
     Search::clean_path(*_voxel_grid, path.value());
     Search::clean_path(*_voxel_grid, path.value()); // 2nd clean_path() is for certain edge cases
   
@@ -103,7 +107,7 @@ void LocalPlanner::visualize_path(std::vector<std::array<float,3>>& path)
     visualization_msgs::msg::Marker marker;
     marker.header.frame_id = "odom";
     marker.header.stamp = this->get_clock()->now();
-    marker.ns = "path_markers";
+    marker.ns = "local_raw_markers";
     marker.id = marker_id;
     marker_id++;
     marker.type = visualization_msgs::msg::Marker::SPHERE;
@@ -133,7 +137,7 @@ void LocalPlanner::visualize_path(std::vector<std::array<float,3>>& path)
     // Add the marker to the array
     path_markers.markers.push_back(marker);
   }
-  _publisher_path_markers->publish(path_markers);
+  _publisher_raw->publish(path_markers);
 }
 
 void LocalPlanner::callback_drone(const nav_msgs::msg::Odometry::SharedPtr odometry)

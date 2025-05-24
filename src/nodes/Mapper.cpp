@@ -73,22 +73,22 @@ void Mapper::callback_pose(const nav_msgs::msg::Odometry::SharedPtr odometry){
         _pose_start_time = rclcpp::Time(odometry->header.stamp).seconds();
     }
 
-    RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
-    _position[0],
-    _position[1],
-    _position[2]);
+    // RCLCPP_INFO(this->get_logger(),"Drone Pose Received: %f %f %f", 
+    // _position[0],
+    // _position[1],
+    // _position[2]);
 
     double pose_sec = rclcpp::Time(odometry->header.stamp).seconds();
 
-    RCLCPP_INFO(this->get_logger(),"Drone Pose Updated with Timestamp: %f", 
-    pose_sec - _pose_start_time);
+    // RCLCPP_INFO(this->get_logger(),"Drone Pose Updated with Timestamp: %f", 
+    // pose_sec - _pose_start_time);
 
     // Match pose to points by timestamp and update _points
     find_best_points_match(rclcpp::Time(odometry->header.stamp));
 
-    double point_sec = rclcpp::Time(_points.header.stamp).seconds();
-    RCLCPP_INFO(this->get_logger(),"Point Updated with Timestamp: %f", 
-    point_sec - _points_start_time);
+    // double point_sec = rclcpp::Time(_points.header.stamp).seconds();
+    // RCLCPP_INFO(this->get_logger(),"Point Updated with Timestamp: %f", 
+    // point_sec - _points_start_time);
 }
 
 void Mapper::find_best_points_match(rclcpp::Time poseTime){
@@ -132,8 +132,9 @@ void Mapper::process_points(){
         temp_point[2] += _position[2];
 
         _voxel_grid->set_voxel_state({temp_point[0], temp_point[1], temp_point[2]}, VoxelState::OCCUPIED);
-            
-        // inflate_recursively_from_index(indices, 0, 2);
+        
+        // std::array<int,3> global = _voxel_grid->world_to_global({temp_point[0], temp_point[1], temp_point[2]});
+        // inflate_recursively_from_index(global, 0, 2);
     }
 
     auto end_timer = std::chrono::high_resolution_clock::now();
@@ -141,17 +142,21 @@ void Mapper::process_points(){
     RCLCPP_INFO(this->get_logger(),"Points processed in %f sec",duration.count());
 }
 
-// void Mapper::inflate_recursively_from_index(std::array<int,3> indices, int counter, int maxIterations)
-// {
-//     if (counter > maxIterations){
-//         return;
-//     }
-//     std::vector<int> neighbors = _voxel_grid->emptyNeighbors(_voxel_grid->flatten(indices));
-//     for (int i : neighbors){
-//         _voxel_grid->setVoxelStateByIndices(_voxel_grid->unflatten(i), VoxelState::OCCUPIED);
-//         inflate_recursively_from_index(_voxel_grid->unflatten(i), counter+1, maxIterations);
-//     }
-// }
+void Mapper::inflate_recursively_from_index(std::array<int,3> global, int counter, int maxIterations)
+{
+    if (counter > maxIterations){
+        return;
+    }
+    auto neighbors_optional = _voxel_grid->empty_neighbors(global);
+    if (neighbors_optional.has_value()){
+        for (std::array<int,3> neighbor_global : neighbors_optional.value())
+        {
+            std::array<float,3> neighbor_world = _voxel_grid->global_to_world(neighbor_global);
+            _voxel_grid->set_voxel_state(neighbor_world, VoxelState::OCCUPIED);
+            inflate_recursively_from_index(neighbor_global, counter+1, maxIterations);
+        }
+    }
+}
 
 void Mapper::visualize_grid()
 {

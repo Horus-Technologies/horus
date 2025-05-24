@@ -42,7 +42,7 @@ private:
     // Publisher members
     rclcpp::TimerBase::SharedPtr _timer;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr _publisher;
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_path_markers;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_raw;
     size_t _count;
     nav_msgs::msg::Path _last_path;
 

@@ -20,7 +20,7 @@ GlobalPlanner::GlobalPlanner(VoxelGrid* voxel_grid)
     });
 
     _publisher_goal = this->create_publisher<std_msgs::msg::Float32MultiArray>("/global_goal", 10);
-    // _publisher_goalMarkers = this->create_publisher<visualization_msgs::msg::MarkerArray>("global_goal/markers", 10);
+    _publisher_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("/global_plan/markers", 10);
 
     _timer = this->create_wall_timer(20ms, std::bind(&GlobalPlanner::run_random, this));
 
@@ -79,13 +79,56 @@ void GlobalPlanner::run_random()
     std::vector<float> goal_data = _goals[_current_goal_index];
     goal.data = goal_data;
     _publisher_goal->publish(goal);
-    RCLCPP_INFO(this->get_logger(),"Goal sent: %f %f %f", 
-    _goals[0][0],
-    _goals[0][1],
-    _goals[0][2]);
+    // RCLCPP_INFO(this->get_logger(),"Goal sent: %f %f %f", 
+    // _goals[0][0],
+    // _goals[0][1],
+    // _goals[0][2]);
+    visualize_path(_goals);
 }
 
 void GlobalPlanner::callback_drone(const geometry_msgs::msg::PoseStamped::SharedPtr pose_stamp)
 {
   _last_pose_drone = *pose_stamp; // odom frame
+}
+
+void GlobalPlanner::visualize_path(std::vector<std::vector<float>>& path)
+{
+  visualization_msgs::msg::MarkerArray path_markers;
+  int marker_id = 0;
+  for (std::vector<float> pos : path)
+  {
+    visualization_msgs::msg::Marker marker;
+    marker.header.frame_id = "odom";
+    marker.header.stamp = this->get_clock()->now();
+    marker.ns = "global_path";
+    marker.id = marker_id;
+    marker_id++;
+    marker.type = visualization_msgs::msg::Marker::SPHERE;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+
+    // Set the pose
+    marker.pose.position.x = pos[0];
+    marker.pose.position.y = pos[1];
+    marker.pose.position.z = pos[2];
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
+    
+    // Set the scale
+    const float scale = 0.25;
+    marker.scale.x = scale;
+    marker.scale.y = scale;
+    marker.scale.z = scale;
+
+    // Set the color
+    marker.color.r = 0.0f;
+    marker.color.g = 1.0f;
+    marker.color.b = 1.0f;
+    marker.color.a = 1.0f;
+
+    // Add the marker to the array
+    path_markers.markers.push_back(marker);
+  }
+  _publisher_markers->publish(path_markers);
 }

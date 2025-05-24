@@ -8,7 +8,7 @@ TrajectoryController::TrajectoryController()
 {
     // Subscribing
     _subscriber = this->create_subscription<nav_msgs::msg::Path>(
-        "waypoints",10,std::bind(&TrajectoryController::callback_path,this,std::placeholders::_1));
+        "/local_plan/clean_path",10,std::bind(&TrajectoryController::callback_path,this,std::placeholders::_1));
     rclcpp::QoS qos(rclcpp::KeepLast(10)); 
     qos.best_effort();
     _subscriber_drone = this->create_subscription<geometry_msgs::msg::PoseStamped>(
