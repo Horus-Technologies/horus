@@ -230,10 +230,10 @@ TEST(SearchTests, AStarInsideLocal)
 {
     VoxelGrid voxel_grid;
     std::array<float,3> start = {0,0,0};
-    std::array<float,3> local_goal = {4,4,4};
+    std::array<float,3> goal = {4,4,4};
     std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
     float local_region_size = 16;
-    Search::run_a_star(voxel_grid, start, local_goal, path, local_region_size);
+    Search::run_a_star(voxel_grid, start, goal, path, local_region_size);
     ASSERT_TRUE(path.has_value());
     // for (int i = 0; i < path.value().size(); i++){
     //     std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
@@ -244,14 +244,31 @@ TEST(SearchTests, AStarOutsideLocal)
 {
     VoxelGrid voxel_grid;
     std::array<float,3> start = {0,0,0};
-    std::array<float,3> local_goal = {20,20,20};
+    std::array<float,3> goal = {20,20,20};
     std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
     float local_region_size = 16;
-    Search::run_a_star(voxel_grid, start, local_goal, path, local_region_size);
+    Search::run_a_star(voxel_grid, start, goal, path, local_region_size);
     ASSERT_TRUE(path.has_value());
     // for (int i = 0; i < path.value().size(); i++){
     //     std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
     // }
+}
+
+TEST(SearchTests, AStarWithinSingleVoxel)
+{
+    VoxelGrid voxel_grid;
+    std::array<float,3> start = {0.1,0.1,0.1};
+    std::array<float,3> goal = {0.5,0.5,0.5};
+    std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
+    float local_region_size = 16;
+    Search::run_a_star(voxel_grid, start, goal, path, local_region_size);
+    Search::clean_path(voxel_grid, path.value());
+    Search::clean_path(voxel_grid, path.value());
+    Search::clean_path(voxel_grid, path.value());
+    ASSERT_TRUE(path.has_value());
+    for (int i = 0; i < path.value().size(); i++){
+        std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
+    }
 }
 
 TEST(SearchTests, RunSearchSimple)

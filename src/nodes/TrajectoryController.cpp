@@ -31,21 +31,27 @@ void TrajectoryController::callback_command()
   double now = _count * 0.01; // sec
   if (_path_avail){
       // Get relative time from start of following
-      float speed_multiplier = 0.5;
+      float speed_multiplier = 1;
       double dt = 0.01;
-      // double t = (now - _time_start_follow)*speed_multiplier; // sec
+
+      std::cout << "path pose count: " << _last_path->poses.size() << std::endl;
+      std::cout << "pose path: " <<  _last_path->poses[0].pose.position.x << " " <<  _last_path->poses[0].pose.position.y << " " <<  _last_path->poses[0].pose.position.z << std::endl;
+      // RCLCPP_INFO(this->get_logger(), "Current Pose: [%f, %f, %f]",
+      // current_pose_drone_vec[0],
+      // current_pose_drone_vec[1],
+      // current_pose_drone_vec[2]);
+      std::cout << "current pose: " <<  _current_pose_drone.position.x << " " <<  _current_pose_drone.position.y << " " <<  _current_pose_drone.position.z << std::endl;
 
       geometry_msgs::msg::PoseStamped pose0 =  _last_path->poses[_current_pose_index-1];
       geometry_msgs::msg::PoseStamped pose1 =  _last_path->poses[_current_pose_index];
       Eigen::Vector3d P0(pose0.pose.position.x, pose0.pose.position.y, pose0.pose.position.z);
       Eigen::Vector3d P1(pose1.pose.position.x, pose1.pose.position.y, pose1.pose.position.z);
       Eigen::Vector3d vec = P1 - P0;
-      
+
       float segment_duration = vec.norm(); //ms
 
       std::cout << "segment duration: " << segment_duration << std::endl;
       s = s + dt * speed_multiplier/segment_duration; // need to normalize by segment duration/distance
-      
       // reaching s=1 means need to select next pose as target or signal path completed
       if (s>=1.0){
         if (_current_pose_index == _last_path->poses.size()-1){
@@ -58,8 +64,9 @@ void TrajectoryController::callback_command()
           s = 0;
         }
       }
-
+      
       std::cout << "s: " << s <<std::endl;
+      
   
       Eigen::Vector3d desired_pose_vec = P0 + s*vec;              
 
@@ -172,6 +179,15 @@ void TrajectoryController::callback_path(const nav_msgs::msg::Path::SharedPtr pa
   _path_started = true;
   _current_pose_index = 1; // start going towards the next pose after drone start
 
+  
+  std::cout << " " << std::endl;
+  for (auto p : path->poses){
+    RCLCPP_INFO(this->get_logger(), "Received pose: [%f, %f, %f]",
+      p.pose.position.x,
+      p.pose.position.y,
+      p.pose.position.z);
+  }
+
   // compute s parameter offset
   Eigen::Vector3f a({
     _last_path->poses[0].pose.position.x,
@@ -187,12 +203,18 @@ void TrajectoryController::callback_path(const nav_msgs::msg::Path::SharedPtr pa
     _current_pose_drone.position.z});
   
   float ab = (b-a).norm();
-  float ac = (c-a).dot(b-a) / ab; // C projected onto AB
+  // float ac = (c-a).dot(b-a) / ab; // C projected onto AB
+  float ac = 0;
   ac = ac + (_prev_desired_pose - _prev_current_pose).norm(); // add current pure pursuit error to offset to maintain speed during path change
   _s_offset = ac / ab;
   if (_s_offset < 0){_s_offset = 0;}
-
+  
   s = _s_offset;
+
+  std::cout << "s offset: " << _s_offset << std::endl;
+
+
+  
 }
 
 int main(int argc, char * argv[])

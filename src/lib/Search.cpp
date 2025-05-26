@@ -144,7 +144,7 @@ namespace Search{
     goal_local[0] = goal_global[0] - (start_global[0] - local_region_size/2);
     goal_local[1] = goal_global[1] - (start_global[1] - local_region_size/2);
     goal_local[2] = goal_global[2] - (start_global[2] - local_region_size/2);
-
+    std::cout << "goal_local: " <<  goal_local[0] << " " <<  goal_local[1] << " " <<  goal_local[2] << std::endl;
     came_from.set(start_local,start_local);
 
     typedef std::pair<float, std::array<int,3>> pq_elem;
@@ -162,7 +162,7 @@ namespace Search{
       auto current_pq = frontier.top();
       std::array<int,3> current_local = current_pq.second;
       frontier.pop();
-
+      std::cout << "current_local: " <<  current_local[0] << " " <<  current_local[1] << " " <<  current_local[2] << std::endl;
       if (current_local == goal_local)
       {
         last_local = goal_local;
@@ -216,9 +216,10 @@ namespace Search{
     // std::cout << "last_local: "  << last_local[0] << ", " << last_local[1] << ", " << last_local[2] << std::endl;
     std::array<int,3> current_local = last_local; // start out in local region frame
     int count = 0;
-    while(current_local != start_local)
+    while(count == 0  || current_local != start_local)
     {
       if (current_local == goal_local){
+        std::cout << "added goal coordinate" << std::endl;
         path.value().push_back(goal);
       }
       else{
