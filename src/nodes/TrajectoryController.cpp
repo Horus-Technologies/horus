@@ -31,21 +31,20 @@ void TrajectoryController::callback_command()
   double now = _count * 0.01; // sec
   if (_path_avail){
       // Get relative time from start of following
-      float speed_multiplier = 1;
+      float speed_multiplier = 0.5;
       double dt = 0.01;
       // double t = (now - _time_start_follow)*speed_multiplier; // sec
-      float segment_duration = 0; //ms
 
-      if (_last_path->poses.size() > 2){
-        segment_duration = _last_path->poses[_current_pose_index].header.stamp.sec
-        - _last_path->poses[_current_pose_index-1].header.stamp.sec;
-      }
-      else{
-        // situation where path is composed only of the final pose
-        segment_duration = 3000;
-      }
+      geometry_msgs::msg::PoseStamped pose0 =  _last_path->poses[_current_pose_index-1];
+      geometry_msgs::msg::PoseStamped pose1 =  _last_path->poses[_current_pose_index];
+      Eigen::Vector3d P0(pose0.pose.position.x, pose0.pose.position.y, pose0.pose.position.z);
+      Eigen::Vector3d P1(pose1.pose.position.x, pose1.pose.position.y, pose1.pose.position.z);
+      Eigen::Vector3d vec = P1 - P0;
+      
+      float segment_duration = vec.norm(); //ms
+
       std::cout << "segment duration: " << segment_duration << std::endl;
-      s = s + dt * speed_multiplier/(segment_duration/1000); // need to normalize by segment duration/distance
+      s = s + dt * speed_multiplier/segment_duration; // need to normalize by segment duration/distance
       
       // reaching s=1 means need to select next pose as target or signal path completed
       if (s>=1.0){
@@ -61,23 +60,9 @@ void TrajectoryController::callback_command()
       }
 
       std::cout << "s: " << s <<std::endl;
-      
-      Eigen::Vector3d vec;
-      Eigen::Vector3d desired_pose_vec;
-      if (_last_path->poses.size() > 1){
-        geometry_msgs::msg::PoseStamped pose0 =  _last_path->poses[_current_pose_index-1];
-        geometry_msgs::msg::PoseStamped pose1 =  _last_path->poses[_current_pose_index];
-        Eigen::Vector3d P0(pose0.pose.position.x, pose0.pose.position.y, pose0.pose.position.z);
-        Eigen::Vector3d P1(pose1.pose.position.x, pose1.pose.position.y, pose1.pose.position.z);
-        vec = P1-P0;
-        desired_pose_vec = P0 + s*vec;              
-      }
-      else{
-        geometry_msgs::msg::PoseStamped pose = _last_path->poses[0]; 
-        desired_pose_vec(0) = pose.pose.position.x;         
-        desired_pose_vec(1) = pose.pose.position.y;   
-        desired_pose_vec(2) = pose.pose.position.z;   
-      }
+  
+      Eigen::Vector3d desired_pose_vec = P0 + s*vec;              
+
       
       Eigen::Vector3d current_pose_drone_vec
       (_current_pose_drone.position.x,
@@ -200,17 +185,14 @@ void TrajectoryController::callback_path(const nav_msgs::msg::Path::SharedPtr pa
     _current_pose_drone.position.x,
     _current_pose_drone.position.y,
     _current_pose_drone.position.z});
-    
-  if (path->poses.size() > 1){
-    float ab = (b-a).norm();
-    float ac = (c-a).dot(b-a) / ab; // C projected onto AB
-    ac = ac + (_prev_desired_pose - _prev_current_pose).norm(); // add current pure pursuit error to offset to maintain speed during path change
-    _s_offset = ac / ab;
-    if (_s_offset < 0){_s_offset = 0;}
-  }
-  else{
-    _s_offset = 0.0;
-  }
+  
+  float ab = (b-a).norm();
+  float ac = (c-a).dot(b-a) / ab; // C projected onto AB
+  ac = ac + (_prev_desired_pose - _prev_current_pose).norm(); // add current pure pursuit error to offset to maintain speed during path change
+  _s_offset = ac / ab;
+  if (_s_offset < 0){_s_offset = 0;}
+
+  s = _s_offset;
 }
 
 int main(int argc, char * argv[])

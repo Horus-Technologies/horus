@@ -13,7 +13,7 @@ namespace Search{
 
     std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
 
-    int local_region_size = 48; // voxel count of local region cube side
+    int local_region_size = 32; // voxel count of local region cube side
 
     run_a_star(voxel_grid,start, goal, path, local_region_size);
     // if(path.has_value()){

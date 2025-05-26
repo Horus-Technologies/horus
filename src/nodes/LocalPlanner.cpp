@@ -52,10 +52,6 @@ void LocalPlanner::run()
   else{
     visualize_path(path.value());
     Search::clean_path(*_voxel_grid, path.value());
-    Search::clean_path(*_voxel_grid, path.value());
-    Search::clean_path(*_voxel_grid, path.value());
-    Search::clean_path(*_voxel_grid, path.value());
-    Search::clean_path(*_voxel_grid, path.value());
     Search::clean_path(*_voxel_grid, path.value()); // 2nd clean_path() is for certain edge cases
   
     _last_path.poses.clear();
@@ -70,7 +66,7 @@ void LocalPlanner::run()
       pose.pose.position.x = point[0];
       pose.pose.position.y = point[1];
       pose.pose.position.z = point[2];
-      pose.pose.orientation.x = 0.00081;
+      pose.pose.orientation.x = 0.00081; // arbitrary orientation since this isn't used to control currently
       pose.pose.orientation.y = 0.000069;
       pose.pose.orientation.z = 0.703855;
       pose.pose.orientation.w = 0.710343;
