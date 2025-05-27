@@ -58,7 +58,6 @@ void LocalPlanner::run()
     
     // compute point on _start voxel that intersects with first 
     double total_path_time = 0.0;
-    int i = 0;
     std::array<float,3> prev_point = path.value().front();
     for(std::array<float,3> point : path.value())
     {
@@ -70,21 +69,8 @@ void LocalPlanner::run()
       pose.pose.orientation.y = 0.000069;
       pose.pose.orientation.z = 0.703855;
       pose.pose.orientation.w = 0.710343;
-      if (i>0){
-        // compute timing for path
-        total_path_time = total_path_time + 1000 * sqrt(
-          pow(pose.pose.position.x - prev_point[0], 2) +
-          pow(pose.pose.position.y - prev_point[1], 2) +
-          pow(pose.pose.position.z - prev_point[2], 2));
-        pose.header.stamp.sec = static_cast<int32_t>(total_path_time);
-      }
-      else{
-        // start time at 0 for first waypoint
-        pose.header.stamp.sec = 0.0;
-      }
   
       _last_path.poses.push_back(pose);
-      i++;
       prev_point = point;
     }
     
