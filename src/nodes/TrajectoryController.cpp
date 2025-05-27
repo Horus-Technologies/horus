@@ -4,7 +4,7 @@
 using namespace std::chrono_literals;
 
 TrajectoryController::TrajectoryController()
-: Node("TrajectoryController"), _count(0), _s_offset(0.0), _prev_desired_pose(0,0,0), _prev_current_pose(0,0,0)
+: Node("TrajectoryController"), _count(0), _prev_desired_pose(0,0,0), _prev_current_pose(0,0,0)
 {
     // Subscribing
     _subscriber = this->create_subscription<nav_msgs::msg::Path>(
@@ -33,14 +33,6 @@ void TrajectoryController::callback_command()
       // Get relative time from start of following
       float speed_multiplier = 1;
       double dt = 0.01;
-
-      std::cout << "path pose count: " << _last_path->poses.size() << std::endl;
-      std::cout << "pose path: " <<  _last_path->poses[0].pose.position.x << " " <<  _last_path->poses[0].pose.position.y << " " <<  _last_path->poses[0].pose.position.z << std::endl;
-      // RCLCPP_INFO(this->get_logger(), "Current Pose: [%f, %f, %f]",
-      // current_pose_drone_vec[0],
-      // current_pose_drone_vec[1],
-      // current_pose_drone_vec[2]);
-      std::cout << "current pose: " <<  _current_pose_drone.position.x << " " <<  _current_pose_drone.position.y << " " <<  _current_pose_drone.position.z << std::endl;
 
       geometry_msgs::msg::PoseStamped pose0 =  _last_path->poses[_current_pose_index-1];
       geometry_msgs::msg::PoseStamped pose1 =  _last_path->poses[_current_pose_index];
@@ -145,19 +137,6 @@ void TrajectoryController::callback_command()
       _prev_desired_pose = desired_pose_vec;
       _prev_current_pose = current_pose_drone_vec;
       _prev_desired_yaw = desired_yaw;
-
-      // RCLCPP_INFO(this->get_logger(), "segment_duration = %f", segment_duration/1000);
-      // RCLCPP_INFO(this->get_logger(), "s = %f",s);
-      // RCLCPP_INFO(this->get_logger(), "Desired Pose: [%f, %f, %f]",
-      // desired_pose_vec[0],
-      // desired_pose_vec[1],
-      // desired_pose_vec[2]);
-      // RCLCPP_INFO(this->get_logger(), "Current Pose: [%f, %f, %f]",
-      // current_pose_drone_vec[0],
-      // current_pose_drone_vec[1],
-      // current_pose_drone_vec[2]);
-      // RCLCPP_INFO(this->get_logger(), "Current Yaw: %f",current_yaw);
-      // RCLCPP_INFO(this->get_logger(), "Desired Yaw: %f",desired_yaw);
   }
 
   _count++;
@@ -188,7 +167,7 @@ void TrajectoryController::callback_path(const nav_msgs::msg::Path::SharedPtr pa
       p.pose.position.z);
   }
 
-  // compute s parameter offset
+  // compute s parameter offset representing current pure pursuit control effort so that path switch is smooth
   Eigen::Vector3f a({
     _last_path->poses[0].pose.position.x,
     _last_path->poses[0].pose.position.y,
@@ -201,20 +180,14 @@ void TrajectoryController::callback_path(const nav_msgs::msg::Path::SharedPtr pa
     _current_pose_drone.position.x,
     _current_pose_drone.position.y,
     _current_pose_drone.position.z});
-  
+
   float ab = (b-a).norm();
-  // float ac = (c-a).dot(b-a) / ab; // C projected onto AB
   float ac = 0;
   ac = ac + (_prev_desired_pose - _prev_current_pose).norm(); // add current pure pursuit error to offset to maintain speed during path change
-  _s_offset = ac / ab;
-  if (_s_offset < 0){_s_offset = 0;}
-  
-  s = _s_offset;
+  s = ac / ab;
+  if (s < 0){s = 0;}
 
-  std::cout << "s offset: " << _s_offset << std::endl;
-
-
-  
+  RCLCPP_INFO(this->get_logger(), "s right after projection: %f",s);
 }
 
 int main(int argc, char * argv[])
