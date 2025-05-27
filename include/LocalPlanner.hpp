@@ -17,7 +17,7 @@ generates local waypoints within local cost map.
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "std_msgs/msg/u_int16_multi_array.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "nav_msgs/msg/path.hpp"
@@ -28,35 +28,33 @@ generates local waypoints within local cost map.
 #include "Search.hpp"
 
 
-class ssLocalPlanner : public rclcpp::Node
+class LocalPlanner : public rclcpp::Node
 {
 public:
-    ssLocalPlanner(CostMap* costMap);
+    LocalPlanner(VoxelGrid* voxel_grid);
 
 private:
     void run();
     void callback_drone(const nav_msgs::msg::Odometry::SharedPtr odometry);
-    void callback_goal(const std_msgs::msg::UInt16MultiArray::SharedPtr goal);
-    void visualizePath(std::vector<std::array<int,3>>& path);
-    void visualizeCostMap();
+    void callback_goal(const std_msgs::msg::Float32MultiArray::SharedPtr goal);
+    void visualize_path(std::vector<std::array<float,3>>& path);
 
     // Publisher members
     rclcpp::TimerBase::SharedPtr _timer;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr _publisher;
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_path_markers;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _publisher_raw;
     size_t _count;
-    nav_msgs::msg::Path _lastPath;
+    nav_msgs::msg::Path _last_path;
 
     // Subscriber members
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr _subscriberDrone;
-    rclcpp::Subscription<std_msgs::msg::UInt16MultiArray>::SharedPtr _subscriberGoal;
-    nav_msgs::msg::Odometry _lastPoseDrone;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr _subscriber_drone;
+    rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr _subscriber_goal;
+    nav_msgs::msg::Odometry _last_pose_drone;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscriber;
 
-    CostMap* _costMap;
-    std::array<int,3> _start;
-    std::array<int,3> _goal;
-    std::mutex _mutex;
+    VoxelGrid* _voxel_grid;
+    std::array<float,3> _start;
+    std::array<float,3> _goal;
 };
 
 #endif

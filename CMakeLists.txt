@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(horus)
 
-# Default to C++14
+# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 add_compile_options(-g)
@@ -30,32 +30,17 @@ find_package(tf2_ros REQUIRED)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-# Include generated message headers
-# include_directories(${drone_tracker_message_INCLUDE_DIRSs})
-
-# Generate messages in the 'msg' folder of drone_tracker package
-# rosidl_generate_interfaces(${PROJECT_NAME}
-#   "msg/Path.msg"  # Example message file in drone_tracker package
-#   DEPENDENCIES drone_tracker_messages # Specify dependency on custom messages
-# )
-
-# Generate messages in the 'msg' folder
-# rosidl_generate_interfaces(${PROJECT_NAME}
-#   "msg/Path.msg"
-#   DEPENDENCIES std_msgs  # Add other dependencies as needed
-# )
-
 # Include Cpp "include" directory
 include_directories(include)
 
 add_executable(fsm 
-  src/nodes/ssFSM.cpp
-  src/nodes/ssGlobalPlanner.cpp
-  src/nodes/ssLocalPlanner.cpp
-  src/nodes/ssMapper.cpp  
-  src/lib/Voxel.cpp
-  src/lib/CostMap.cpp
+  src/nodes/FSM.cpp
+  src/nodes/GlobalPlanner.cpp
+  src/nodes/LocalPlanner.cpp
+  src/nodes/Mapper.cpp  
+  src/lib/VoxelGrid.cpp
   src/lib/Search.cpp
+  src/lib/Chunk.cpp
 )
 ament_target_dependencies(fsm
   rclcpp
@@ -67,33 +52,9 @@ ament_target_dependencies(fsm
   tf2_ros
 )
 
-
-# Create Cpp executable for local_planner
-# add_executable(local_planner 
-#   src/nodes/ssLocalPlanner.cpp 
-#   src/lib/Voxel.cpp
-#   src/lib/CostMap.cpp
-#   src/lib/Search.cpp
-# )
-# ament_target_dependencies(local_planner
-#   rclcpp
-#   std_msgs
-#   geometry_msgs
-#   visualization_msgs
-#   nav_msgs
-#   geographic_msgs
-#   Eigen3
-# )
-
-# find_package(planner_test REQUIRED)
-# target_link_libraries(path_planner_exe planner_test)
-# target_include_directories(path_planner_exe PUBLIC
-#   ../../../../../planner_test/include
-# )
-
 # Create Cpp executable for trajectory_controller
 add_executable(trajectory_controller
-  src/nodes/ssTrajectoryController.cpp
+  src/nodes/TrajectoryController.cpp
 )
 ament_target_dependencies(trajectory_controller
   rclcpp
@@ -103,27 +64,13 @@ ament_target_dependencies(trajectory_controller
   nav_msgs
 )
 
-add_executable(demoBFS
-  src/nodes/demoBFS.cpp
-  src/lib/Voxel.cpp
-  src/lib/CostMap.cpp
-  src/lib/Search.cpp
+add_executable(demoMapper
+  src/nodes/demoMapper.cpp
+  src/nodes/Mapper.cpp
+  src/lib/VoxelGrid.cpp
+  src/lib/Chunk.cpp
 )
-ament_target_dependencies(demoBFS
-  rclcpp
-  std_msgs
-  geometry_msgs
-  visualization_msgs
-  nav_msgs
-  Eigen3
-)
-
-add_executable(demoVoxelization
-  src/nodes/demoVoxelization.cpp
-  src/lib/Voxel.cpp
-  src/lib/CostMap.cpp
-)
-ament_target_dependencies(demoVoxelization
+ament_target_dependencies(demoMapper
   rclcpp
   std_msgs
   geometry_msgs
@@ -134,31 +81,25 @@ ament_target_dependencies(demoVoxelization
 )
 
 # Tests
-# find_package(ament_cmake_gtest REQUIRED)
-# ament_add_gtest(tests test/tests.cpp src/lib/Voxel.cpp src/lib/CostMap.cpp)
-# target_include_directories(tests PUBLIC
-#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#   $<INSTALL_INTERFACE:include>
-# )
+find_package(ament_cmake_gtest REQUIRED)
+ament_add_gtest(tests 
+  test/tests.cpp 
+  src/lib/Chunk.cpp 
+  src/lib/VoxelGrid.cpp
+  src/lib/Search.cpp)
+target_include_directories(tests PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
 
 # Install Cpp executables
 install(TARGETS
   fsm
   trajectory_controller
-  demoBFS
-  demoVoxelization
-  # tests
+  demoMapper
+  tests
   DESTINATION lib/${PROJECT_NAME}
 )
-
-# Install Python modules
-# ament_python_install_package(${PROJECT_NAME})
-
-# # Install Python executables
-# install(PROGRAMS
-#   src/target_detector/TargetPosePublisher.py
-#   DESTINATION lib/${PROJECT_NAME}
-# )
 
 # Add line to install launch files
 install(DIRECTORY launch/
