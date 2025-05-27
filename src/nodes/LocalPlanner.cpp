@@ -28,7 +28,7 @@ LocalPlanner::LocalPlanner(VoxelGrid* voxel_grid)
 
     // Publishing
     _publisher = this->create_publisher<nav_msgs::msg::Path>("/local_plan/clean_path", 10); // waypoints with stamped pose
-    _timer = this->create_wall_timer(300ms, std::bind(&LocalPlanner::run, this));
+    _timer = this->create_wall_timer(100ms, std::bind(&LocalPlanner::run, this));
     _publisher_raw = this->create_publisher<visualization_msgs::msg::MarkerArray>("/local_plan/raw_markers", 10);
 
 }

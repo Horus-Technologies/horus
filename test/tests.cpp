@@ -1,6 +1,84 @@
 #include <gtest/gtest.h>
 #include "VoxelGrid.hpp"
 #include "Search.hpp"
+#include "Math.hpp"
+
+TEST(MathTests, PointLineIntersection)
+{
+    Eigen::Vector3f point(3, 1, 0);
+    Eigen::Vector3f line0(0, 0, 0);
+    Eigen::Vector3f line1(2, 0, 0);
+    Eigen::Vector3f proj = Math::point_line_projection(point, line0, line1);
+    Eigen::Vector3f expected_projection(3,0,0);
+    EXPECT_EQ(proj, expected_projection);
+}
+
+TEST(MathTests, PointSegmentIntersection)
+{
+    Eigen::Vector3f point(3, 1, 0);
+    Eigen::Vector3f seg0(0, 0, 0);
+    Eigen::Vector3f seg1(2, 0, 0);
+    Eigen::Vector3f proj = Math::point_segment_projection(point, seg0, seg1);
+    Eigen::Vector3f expected_projection(2,0,0);
+    EXPECT_EQ(proj, expected_projection);
+}
+
+TEST(MathTests, SphereLineIntersectionTwo)
+{
+    Eigen::Vector3f point0(4, 0, 0);
+    Eigen::Vector3f point1(5, 0, 0);
+    Eigen::Vector3f center(2, 0, 0);
+    float radius = 1;
+    std::vector<Eigen::Vector3f> intersections = Math::sphere_line_intersection(point0, point1, center, radius);
+    Eigen::Vector3f expected_intersection0(1,0,0);
+    Eigen::Vector3f expected_intersection1(3,0,0);
+    EXPECT_EQ(intersections[0], expected_intersection0);
+    EXPECT_EQ(intersections[1], expected_intersection1);
+}
+
+TEST(MathTests, SphereLineIntersectionZero)
+{
+    Eigen::Vector3f point0(0, 0, 0);
+    Eigen::Vector3f point1(5, 0, 0);
+    Eigen::Vector3f center(0, 20, 0);
+    float radius = 1;
+    std::vector<Eigen::Vector3f> intersections = Math::sphere_line_intersection(point0, point1, center, radius);
+    EXPECT_EQ(intersections.size(), 0);
+}
+
+TEST(MathTests, SphereSegmentIntersectionTwo)
+{
+    Eigen::Vector3f point0(0, 0, 0);
+    Eigen::Vector3f point1(5, 0, 0);
+    Eigen::Vector3f center(2, 0, 0);
+    float radius = 1;
+    std::vector<Eigen::Vector3f> intersections = Math::sphere_segment_intersection(point0, point1, center, radius);
+    Eigen::Vector3f expected_intersection0(1,0,0);
+    Eigen::Vector3f expected_intersection1(3,0,0);
+    EXPECT_EQ(intersections[0], expected_intersection0);
+    EXPECT_EQ(intersections[1], expected_intersection1);
+}
+
+TEST(MathTests, SphereSegmentIntersectionOne)
+{
+    Eigen::Vector3f point0(0, 0, 0);
+    Eigen::Vector3f point1(2, 0, 0);
+    Eigen::Vector3f center(2, 0, 0);
+    float radius = 1;
+    std::vector<Eigen::Vector3f> intersections = Math::sphere_segment_intersection(point0, point1, center, radius);
+    Eigen::Vector3f expected_intersection(1,0,0);
+    EXPECT_EQ(intersections[0], expected_intersection);
+}
+
+TEST(MathTests, SphereSegmentIntersectionZero)
+{
+    Eigen::Vector3f point0(0, 0, 0);
+    Eigen::Vector3f point1(2, 0, 0);
+    Eigen::Vector3f center(0, 20, 0);
+    float radius = 1;
+    std::vector<Eigen::Vector3f> intersections = Math::sphere_segment_intersection(point0, point1, center, radius);
+    EXPECT_EQ(intersections.size(), 0);
+}
 
 TEST(VoxelGridTests, FrameConversions)
 {

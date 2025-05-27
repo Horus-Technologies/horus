@@ -12,6 +12,8 @@ the new plan.
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
+#include "Math.hpp"
+
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "geometry_msgs/msg/pose.hpp"
@@ -53,7 +55,7 @@ class TrajectoryController : public rclcpp::Node
     int _current_pose_index; // index of the current pose drone is heading towards
     float _s_offset;
 
-    Eigen::Vector3d _prev_desired_pose;
-    Eigen::Vector3d _prev_current_pose;
+    Eigen::Vector3f _prev_desired_pose;
+    Eigen::Vector3f _prev_current_pose;
     float _prev_desired_yaw;
 };

@@ -30,74 +30,102 @@ void TrajectoryController::callback_command()
 { 
   double now = _count * 0.01; // sec
   if (_path_avail){
-      // Get relative time from start of following
-      float speed_multiplier = 1;
-      double dt = 0.01;
+    float lookahead_distance = 0.5;
 
-      geometry_msgs::msg::PoseStamped pose0 =  _last_path->poses[_current_pose_index-1];
-      geometry_msgs::msg::PoseStamped pose1 =  _last_path->poses[_current_pose_index];
-      Eigen::Vector3d P0(pose0.pose.position.x, pose0.pose.position.y, pose0.pose.position.z);
-      Eigen::Vector3d P1(pose1.pose.position.x, pose1.pose.position.y, pose1.pose.position.z);
-      Eigen::Vector3d vec = P1 - P0;
-
-      float segment_duration = vec.norm(); //ms
-
-      std::cout << "segment duration: " << segment_duration << std::endl;
-      s = s + dt * speed_multiplier/segment_duration; // need to normalize by segment duration/distance
-      // reaching s=1 means need to select next pose as target or signal path completed
-      if (s>=1.0){
-        if (_current_pose_index == _last_path->poses.size()-1){
-          s=1;
-        }
-        else{ // switch to next segment of path
-          _current_pose_index = _current_pose_index + 1;
-          _time_start_follow = now;
-          std::cout << "switch to next segment" << std::endl;
-          s = 0;
-        }
-      }
-      
-      std::cout << "s: " << s <<std::endl;
-      
-  
-      Eigen::Vector3d desired_pose_vec = P0 + s*vec;              
-
-      
-      Eigen::Vector3d current_pose_drone_vec
+    Eigen::Vector3f current_pose_drone_vec
       (_current_pose_drone.position.x,
       _current_pose_drone.position.y,
       _current_pose_drone.position.z);
+
+    std::optional<Eigen::Vector3f> furthest_intersection = std::nullopt;
+    
+    // find furthest intersection from entire path
+    for (int i = 0; i < _last_path->poses.size()-1; i++){
+      geometry_msgs::msg::PoseStamped pose0 =  _last_path->poses[i];
+      geometry_msgs::msg::PoseStamped pose1 =  _last_path->poses[i+1];
+      Eigen::Vector3f point0(pose0.pose.position.x, pose0.pose.position.y, pose0.pose.position.z);
+      Eigen::Vector3f point1(pose1.pose.position.x, pose1.pose.position.y, pose1.pose.position.z);
+      
+      std::vector<Eigen::Vector3f> intersections = Math::sphere_segment_intersection(point0, point1, current_pose_drone_vec, lookahead_distance);
+      if (intersections.size() == 2){
+        // take intersection point closer to point1
+        std::vector<float> distances_to_point1{};
+        for (Eigen::Vector3f intersection : intersections){
+          float distance = (intersection - point1).norm();
+          distances_to_point1.push_back(distance);
+        }
+        auto min_iter = std::min_element(distances_to_point1.begin(), distances_to_point1.end());
+        int min_index = std::distance(distances_to_point1.begin(),min_iter);
+        furthest_intersection = intersections[min_index];
+      }
+      else if (intersections.size() == 1){
+        furthest_intersection = intersections[0];
+      }
+    }
+
+    Eigen::Vector3f desired_point;
+    if(furthest_intersection.has_value()){
+      desired_point = furthest_intersection.value();
+    }
+    else{
+      // check if final endpoint is within the lookahead_distance already
+      geometry_msgs::msg::PoseStamped pose_end =  _last_path->poses.back();
+      Eigen::Vector3f point_end(pose_end.pose.position.x, pose_end.pose.position.y, pose_end.pose.position.z);
+      if ((point_end - current_pose_drone_vec).norm() <= lookahead_distance){
+        desired_point = point_end;
+      }
+      else{
+        // handle case of no intersection - in this case just go towards nearest projected point on path
+        float minimum_project_distance = std::numeric_limits<float>::max();
+        for (int i = 0; i < _last_path->poses.size()-1; i++){
+          geometry_msgs::msg::PoseStamped pose0 =  _last_path->poses[i];
+          geometry_msgs::msg::PoseStamped pose1 =  _last_path->poses[i+1];
+          Eigen::Vector3f point0(pose0.pose.position.x, pose0.pose.position.y, pose0.pose.position.z);
+          Eigen::Vector3f point1(pose1.pose.position.x, pose1.pose.position.y, pose1.pose.position.z);
+  
+          Eigen::Vector3f projected_point = Math::point_segment_projection(current_pose_drone_vec, point0, point1);
+          float distance = (current_pose_drone_vec - projected_point).norm();
+          if (distance < minimum_project_distance){
+            minimum_project_distance = distance;
+            Eigen::Vector3f dir = (projected_point - current_pose_drone_vec)/(projected_point - current_pose_drone_vec).norm();
+            desired_point = current_pose_drone_vec + dir * lookahead_distance;
+          }
+        }
+      }
+    }
+
+    RCLCPP_INFO(this->get_logger(), "Desired Point: [%f, %f, %f]", desired_point[0],desired_point[1],desired_point[2]);
 
       // Publish desired pose for Rviz
       auto desired_pose_stamped = geometry_msgs::msg::PoseStamped();
       desired_pose_stamped.header.frame_id = "odom";
       desired_pose_stamped.header.stamp = this->now();
-      desired_pose_stamped.pose.position.x = desired_pose_vec[0];
-      desired_pose_stamped.pose.position.y = desired_pose_vec[1];
-      desired_pose_stamped.pose.position.z = desired_pose_vec[2];
+      desired_pose_stamped.pose.position.x = desired_point[0];
+      desired_pose_stamped.pose.position.y = desired_point[1];
+      desired_pose_stamped.pose.position.z = desired_point[2];
       _publisher_desired->publish(desired_pose_stamped);
 
       //PID Algo
-      Eigen::Vector3d k_p(1,1,1);
-      Eigen::Vector3d k_d(0.5,0.5,0.5);
-      float k_p_yaw = 0.75;
+      Eigen::Vector3f k_p(2,2,2);
+      Eigen::Vector3f k_d(2,2,2);
+      float k_p_yaw = 1;
 
-      Eigen::Vector3d d_desired_pose = desired_pose_vec - _prev_desired_pose;
-      Eigen::Vector3d d_current_pose = current_pose_drone_vec - _prev_current_pose;
+      Eigen::Vector3f d_desired_pose = desired_point - _prev_desired_pose;
+      Eigen::Vector3f d_current_pose = current_pose_drone_vec - _prev_current_pose;
 
-      Eigen::Vector3d command_linear_world = k_p.cwiseProduct(desired_pose_vec - current_pose_drone_vec)
+      Eigen::Vector3f command_linear_world = k_p.cwiseProduct(desired_point - current_pose_drone_vec)
         + k_d.cwiseProduct(d_desired_pose - d_current_pose);
 
       // Rotate Twist command into drone frame
-      Eigen::Quaterniond drone_quat(_current_pose_drone.orientation.w,
+      Eigen::Quaternionf drone_quat(_current_pose_drone.orientation.w,
                                     _current_pose_drone.orientation.x,
                                     _current_pose_drone.orientation.y,
                                     _current_pose_drone.orientation.z);
       drone_quat.normalize(); // Make quaternion unit for conversion to rotation matrix.
 
-      Eigen::Matrix3d drone_rot_mat = drone_quat.toRotationMatrix();
+      Eigen::Matrix3f drone_rot_mat = drone_quat.toRotationMatrix();
 
-      Eigen::Vector3d command_linear_drone = drone_rot_mat.transpose() * command_linear_world;
+      Eigen::Vector3f command_linear_drone = drone_rot_mat.transpose() * command_linear_world;
       
       geometry_msgs::msg::Twist command_twist;
       command_twist.linear.x = command_linear_drone[0];
@@ -107,13 +135,14 @@ void TrajectoryController::callback_command()
       // Orientation Control
       float desired_yaw;
       if (_last_path->poses.size() > 1){
+        Eigen::Vector3f vec = desired_point - current_pose_drone_vec;
         desired_yaw = atan2(-vec(0),vec(1));
       }
       else{
         desired_yaw = _prev_desired_yaw;
       }
-      Eigen::Vector3d ref(1,0,0);
-      Eigen::Vector3d drone_vec = drone_rot_mat * ref;
+      Eigen::Vector3f ref(1,0,0);
+      Eigen::Vector3f drone_vec = drone_rot_mat * ref;
       
       float current_yaw = atan2(-drone_vec(0),drone_vec(1));
 
@@ -134,9 +163,12 @@ void TrajectoryController::callback_command()
       command_twist_stamped.twist = command_twist;
       _publisher->publish(command_twist_stamped);
 
-      _prev_desired_pose = desired_pose_vec;
+      _prev_desired_pose = desired_point;
       _prev_current_pose = current_pose_drone_vec;
       _prev_desired_yaw = desired_yaw;
+
+      RCLCPP_INFO(this->get_logger(), "Command Linear: [%f, %f, %f]", command_twist.linear.x,command_twist.linear.y,command_twist.linear.z);
+      RCLCPP_INFO(this->get_logger(), "Command Yaw: %f", command_twist.angular.z);
   }
 
   _count++;
@@ -157,37 +189,6 @@ void TrajectoryController::callback_path(const nav_msgs::msg::Path::SharedPtr pa
   _time_start_follow = now; // sec
   _path_started = true;
   _current_pose_index = 1; // start going towards the next pose after drone start
-
-  
-  std::cout << " " << std::endl;
-  for (auto p : path->poses){
-    RCLCPP_INFO(this->get_logger(), "Received pose: [%f, %f, %f]",
-      p.pose.position.x,
-      p.pose.position.y,
-      p.pose.position.z);
-  }
-
-  // compute s parameter offset representing current pure pursuit control effort so that path switch is smooth
-  Eigen::Vector3f a({
-    _last_path->poses[0].pose.position.x,
-    _last_path->poses[0].pose.position.y,
-    _last_path->poses[0].pose.position.z});
-  Eigen::Vector3f b({
-    _last_path->poses[1].pose.position.x,
-    _last_path->poses[1].pose.position.y,
-    _last_path->poses[1].pose.position.z});
-  Eigen::Vector3f c({
-    _current_pose_drone.position.x,
-    _current_pose_drone.position.y,
-    _current_pose_drone.position.z});
-
-  float ab = (b-a).norm();
-  float ac = 0;
-  ac = ac + (_prev_desired_pose - _prev_current_pose).norm(); // add current pure pursuit error to offset to maintain speed during path change
-  s = ac / ab;
-  if (s < 0){s = 0;}
-
-  RCLCPP_INFO(this->get_logger(), "s right after projection: %f",s);
 }
 
 int main(int argc, char * argv[])

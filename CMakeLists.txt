@@ -55,6 +55,7 @@ ament_target_dependencies(fsm
 # Create Cpp executable for trajectory_controller
 add_executable(trajectory_controller
   src/nodes/TrajectoryController.cpp
+  src/lib/Math.cpp
 )
 ament_target_dependencies(trajectory_controller
   rclcpp
@@ -86,7 +87,8 @@ ament_add_gtest(tests
   test/tests.cpp 
   src/lib/Chunk.cpp 
   src/lib/VoxelGrid.cpp
-  src/lib/Search.cpp)
+  src/lib/Search.cpp
+  src/lib/Math.cpp)
 target_include_directories(tests PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
