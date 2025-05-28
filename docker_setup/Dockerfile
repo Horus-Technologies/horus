@@ -1,5 +1,5 @@
 # Start from Ubuntu 22.04 (Jammy Jellyfish)
-FROM ubuntu:22.04
+FROM nvidia/cuda:12.1.1-devel-ubuntu22.04
 
 # Set DEBIAN_FRONTEND to noninteractive to avoid prompts
 ARG DEBIAN_FRONTEND=noninteractive
@@ -148,9 +148,8 @@ RUN pip3 install --no-cache-dir -U empy==3.3.4 pyros-genmsg setuptools
 
 # === Micro-XRCE-DDS Agent Installation ===
 WORKDIR /root/horus
-RUN git clone -b v2.4.2 https://github.com/eProsima/Micro-XRCE-DDS-Agent.git \
+RUN git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git \
     && cd Micro-XRCE-DDS-Agent \
-    && sed -i 's/2\.12\.x/2.12.1/g' CMakeLists.txt \
     && mkdir build && cd build \
     && cmake .. \
     && make \
