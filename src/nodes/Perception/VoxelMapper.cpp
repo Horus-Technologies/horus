@@ -1,9 +1,9 @@
-#include "Mapper.hpp"
+#include "VoxelMapper.hpp"
 
 using namespace std::chrono_literals;
 
-Mapper::Mapper(VoxelGrid* voxel_grid)
-: Node("Mapper"), _count(0), _voxel_grid(voxel_grid)
+VoxelMapper::VoxelMapper(VoxelGrid* voxel_grid)
+: Node("VoxelMapper"), _count(0), _voxel_grid(voxel_grid)
 {   
     // Callback group
     auto exclusive_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -27,13 +27,13 @@ Mapper::Mapper(VoxelGrid* voxel_grid)
 
     // Timer
     _timer = this->create_wall_timer(
-        500ms, std::bind(&Mapper::run, this));
+        500ms, std::bind(&VoxelMapper::run, this));
 
     // Publishers
     _publisher_map_markers = this->create_publisher<visualization_msgs::msg::MarkerArray>("map/markers", 10);
 }
 
-void Mapper::run()
+void VoxelMapper::run()
 {
     if (_points_received && _pose_received){
         // transformBroadcast();
@@ -42,7 +42,7 @@ void Mapper::run()
     }
 }
 
-void Mapper::callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
+void VoxelMapper::callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr points){
     std::lock_guard<std::mutex> lock(_points_mutex);
     _points_buffer.push_front(points);
 
@@ -57,7 +57,7 @@ void Mapper::callback_points(const sensor_msgs::msg::PointCloud2::SharedPtr poin
     // RCLCPP_INFO(this->get_logger(),"Points added to buffer. Buffer of size: %ld", _points_buffer.size());
 }
 
-void Mapper::callback_pose(const nav_msgs::msg::Odometry::SharedPtr odometry){
+void VoxelMapper::callback_pose(const nav_msgs::msg::Odometry::SharedPtr odometry){
     std::lock_guard<std::mutex> lock(_points_mutex);
     _position[0] = odometry->pose.pose.position.x;
     _position[1] = odometry->pose.pose.position.y;
@@ -91,7 +91,7 @@ void Mapper::callback_pose(const nav_msgs::msg::Odometry::SharedPtr odometry){
     // point_sec - _points_start_time);
 }
 
-void Mapper::find_best_points_match(rclcpp::Time poseTime){
+void VoxelMapper::find_best_points_match(rclcpp::Time poseTime){
     // Iterate through points buffer to and find the best match by timestamp
     sensor_msgs::msg::PointCloud2::SharedPtr best_point;
     double smallest_time_diff = std::numeric_limits<double>::max();
@@ -112,7 +112,7 @@ void Mapper::find_best_points_match(rclcpp::Time poseTime){
     }
 }
 
-void Mapper::process_points(){
+void VoxelMapper::process_points(){
     auto start_timer = std::chrono::high_resolution_clock::now();
     std::lock_guard<std::mutex> lock(_points_mutex);
     sensor_msgs::PointCloud2Iterator<float> iter_x(_points, "x");
@@ -145,7 +145,7 @@ void Mapper::process_points(){
     RCLCPP_INFO(this->get_logger(),"Points processed in %f sec",duration.count());
 }
 
-void Mapper::inflate_recursively_from_index(std::array<int,3> global, int counter, int maxIterations)
+void VoxelMapper::inflate_recursively_from_index(std::array<int,3> global, int counter, int maxIterations)
 {
     if (counter > maxIterations){
         return;
@@ -161,7 +161,7 @@ void Mapper::inflate_recursively_from_index(std::array<int,3> global, int counte
     }
 }
 
-void Mapper::visualize_grid()
+void VoxelMapper::visualize_grid()
 {
     auto start_timer = std::chrono::high_resolution_clock::now();
     visualization_msgs::msg::MarkerArray marker_array;

@@ -5,7 +5,7 @@ This node will be used as the main state machine for the Horus drone software st
 
 #include "LocalPlanner.hpp"
 #include "GlobalPlanner.hpp"
-#include "Mapper.hpp"
+#include "VoxelMapper.hpp"
 
 // class ssFSM : public rclcpp::Node
 // {

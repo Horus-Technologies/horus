@@ -35,9 +35,9 @@ include_directories(include)
 
 add_executable(fsm 
   src/nodes/FSM.cpp
-  src/nodes/GlobalPlanner.cpp
-  src/nodes/LocalPlanner.cpp
-  src/nodes/Mapper.cpp  
+  src/nodes/MotionControl/GlobalPlanner.cpp
+  src/nodes/MotionControl/LocalPlanner.cpp
+  src/nodes/Perception/VoxelMapper.cpp  
   src/lib/VoxelGrid.cpp
   src/lib/Search.cpp
   src/lib/Chunk.cpp
@@ -54,7 +54,7 @@ ament_target_dependencies(fsm
 
 # Create Cpp executable for trajectory_controller
 add_executable(trajectory_controller
-  src/nodes/TrajectoryController.cpp
+  src/nodes/MotionControl/TrajectoryController.cpp
 )
 ament_target_dependencies(trajectory_controller
   rclcpp
@@ -64,13 +64,13 @@ ament_target_dependencies(trajectory_controller
   nav_msgs
 )
 
-add_executable(demoMapper
-  src/nodes/demoMapper.cpp
-  src/nodes/Mapper.cpp
+add_executable(demo_voxel_mapper
+  src/nodes/Perception/DemoVoxelMapper.cpp
+  src/nodes/Perception/VoxelMapper.cpp
   src/lib/VoxelGrid.cpp
   src/lib/Chunk.cpp
 )
-ament_target_dependencies(demoMapper
+ament_target_dependencies(demo_voxel_mapper
   rclcpp
   std_msgs
   geometry_msgs
@@ -96,7 +96,7 @@ target_include_directories(tests PUBLIC
 install(TARGETS
   fsm
   trajectory_controller
-  demoMapper
+  demo_voxel_mapper
   tests
   DESTINATION lib/${PROJECT_NAME}
 )
