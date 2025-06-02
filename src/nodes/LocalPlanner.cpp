@@ -28,7 +28,7 @@ LocalPlanner::LocalPlanner(VoxelGrid* voxel_grid)
 
     // Publishing
     _publisher = this->create_publisher<nav_msgs::msg::Path>("/local_plan/clean_path", 10); // waypoints with stamped pose
-    _timer = this->create_wall_timer(100ms, std::bind(&LocalPlanner::run, this));
+    _timer = this->create_wall_timer(300ms, std::bind(&LocalPlanner::run, this));
     _publisher_raw = this->create_publisher<visualization_msgs::msg::MarkerArray>("/local_plan/raw_markers", 10);
 
 }
@@ -43,8 +43,6 @@ void LocalPlanner::run()
     _last_pose_drone.pose.pose.position.z
   };
   
-  RCLCPP_INFO(this->get_logger(), "Start: %f %f %f"
-  , _start[0], _start[1], _start[2]);
   auto path = Search::run_search(*_voxel_grid, _start, _goal);
   if (!path.has_value()){
     RCLCPP_WARN(this->get_logger(), "Search unable to find path to goal!");

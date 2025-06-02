@@ -29,7 +29,7 @@ TrajectoryController::TrajectoryController()
 void TrajectoryController::callback_command()
 { 
   if (_path_avail){
-    float lookahead_distance = 0.5;
+    float lookahead_distance = 1;
 
     Eigen::Vector3f current_point
       (_current_pose.position.x,
@@ -103,9 +103,9 @@ void TrajectoryController::callback_command()
       _publisher_desired->publish(desired_pose_stamped);
 
       //PID Algo
-      Eigen::Vector3f k_p(2,2,2);
-      Eigen::Vector3f k_d(2,2,2);
-      float k_p_yaw = 1;
+      Eigen::Vector3f k_p(1,1,1);
+      Eigen::Vector3f k_d(0.5,0.5,0.5);
+      float k_p_yaw = 0.75;
 
       Eigen::Vector3f d_desired_point = desired_point - _prev_desired_point;
       Eigen::Vector3f d_current_point = current_point - _prev_current_point;

@@ -267,10 +267,8 @@ bool VoxelGrid::check_collision(const std::array<float,3>& point1, const std::ar
             throw std::runtime_error("Voxel traversal during collision check taking too long (count = 1000)");
         }
         std::array<float,3> pos = global_to_world({x,y,z});
-        std::cout << "world pos: " << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
         VoxelState voxel_state = get_voxel_state(pos);
         if (voxel_state == VoxelState::OCCUPIED){
-            std::cout << "COLLISION FOUND" << std::endl;
             return true;
         }
         

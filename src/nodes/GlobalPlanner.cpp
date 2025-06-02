@@ -68,10 +68,10 @@ void GlobalPlanner::run_random()
     {   
         std::mt19937 gen(std::random_device{}());
         std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-        _goals[0] = {dist(gen)*20.0f, dist(gen)*20.0f, dist(gen)*8.0f};
+        _goals[0] = {dist(gen)*20.0f, dist(gen)*20.0f, dist(gen)*3.0f+1};
         goal_point = {_goals[0][0], _goals[0][1], _goals[0][2]};
         while(_voxel_grid->get_voxel_state(goal_point) == VoxelState::OCCUPIED){
-            _goals[0] = {dist(gen)*20.0f, dist(gen)*20.0f, dist(gen)*8.0f};
+            _goals[0] = {dist(gen)*20.0f, dist(gen)*20.0f, dist(gen)*3.0f+1};
             goal_point = {_goals[0][0], _goals[0][1], _goals[0][2]};
         } 
     }
