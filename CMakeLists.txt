@@ -104,12 +104,16 @@ install(TARGETS
 )
 
 # Add line to install launch files
-install(DIRECTORY launch/
-    DESTINATION share/${PROJECT_NAME}/launch
-)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/launch")
+  install(DIRECTORY launch/
+      DESTINATION share/${PROJECT_NAME}/launch
+  )
+endif()
 
-install(DIRECTORY config/
-  DESTINATION share/${PROJECT_NAME}/config
-)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/config")
+  install(DIRECTORY config/
+    DESTINATION share/${PROJECT_NAME}/config
+  )
+endif()
 
 ament_package()
