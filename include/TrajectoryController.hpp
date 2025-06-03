@@ -12,6 +12,8 @@ the new plan.
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
+#include "Math.hpp"
+
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "geometry_msgs/msg/pose.hpp"
@@ -36,23 +38,16 @@ class TrajectoryController : public rclcpp::Node
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr _publisher;
     rclcpp::TimerBase::SharedPtr _timer_desired;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr _publisher_desired;
-    size_t _count;
-
+    
     // Subscriber members
-    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr _subscriber;
+    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr _subscriber_path;
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _subscriber_drone;
     std::shared_ptr<nav_msgs::msg::Path> _last_path{};
-    geometry_msgs::msg::Pose _current_pose_drone;
-
+    geometry_msgs::msg::Pose _current_pose;
+    
     // General members
-    double _time_start_follow;
-    bool _path_started = false;
-    bool _path_complete = false;
     bool _path_avail = false;
-    int _current_pose_index; // index of the current pose drone is heading towards
-    float _s_offset;
-
-    Eigen::Vector3d _prev_desired_pose;
-    Eigen::Vector3d _prev_current_pose;
+    Eigen::Vector3f _prev_desired_point;
+    Eigen::Vector3f _prev_current_point;
     float _prev_desired_yaw;
 };

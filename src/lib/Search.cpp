@@ -13,7 +13,7 @@ namespace Search{
 
     std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
 
-    int local_region_size = 48; // voxel count of local region cube side
+    int local_region_size = 32; // voxel count of local region cube side
 
     run_a_star(voxel_grid,start, goal, path, local_region_size);
     // if(path.has_value()){
@@ -144,7 +144,6 @@ namespace Search{
     goal_local[0] = goal_global[0] - (start_global[0] - local_region_size/2);
     goal_local[1] = goal_global[1] - (start_global[1] - local_region_size/2);
     goal_local[2] = goal_global[2] - (start_global[2] - local_region_size/2);
-
     came_from.set(start_local,start_local);
 
     typedef std::pair<float, std::array<int,3>> pq_elem;
@@ -162,7 +161,6 @@ namespace Search{
       auto current_pq = frontier.top();
       std::array<int,3> current_local = current_pq.second;
       frontier.pop();
-
       if (current_local == goal_local)
       {
         last_local = goal_local;
@@ -190,7 +188,6 @@ namespace Search{
           int min_next_local = *std::min_element(next_local.begin(), next_local.end());
           if (max_next_local >= local_region_size || min_next_local < 0){
             // A* has reached the local region wall and can end the search
-            std::cout << "local region wall reached" << std::endl;
             frontier = std::priority_queue<pq_elem, std::vector<pq_elem>, std::greater<pq_elem>>();
             last_local = current_local;
             break;
@@ -216,24 +213,20 @@ namespace Search{
     // std::cout << "last_local: "  << last_local[0] << ", " << last_local[1] << ", " << last_local[2] << std::endl;
     std::array<int,3> current_local = last_local; // start out in local region frame
     int count = 0;
-    while(current_local != start_local)
+    while(count == 0  || current_local != start_local)
     {
       if (current_local == goal_local){
         path.value().push_back(goal);
       }
       else{
         // convert to global index frame
-        // std::cout << "current_local: "  << current_local[0] << ", " << current_local[1] << ", " << current_local[2] << std::endl;
         std::array<int,3> current_global;
         current_global[0] = current_local[0] + (start_global[0] - local_region_size/2);
         current_global[1] = current_local[1] + (start_global[1] - local_region_size/2);
         current_global[2] = current_local[2] + (start_global[2] - local_region_size/2);
-        // std::cout << "current_global: "  << current_global[0] << ", " << current_global[1] << ", " << current_global[2] << std::endl;
         std::array<float,3> current = voxel_grid.global_to_world(current_global);
         path.value().push_back(current);
       }
-      // RCLCPP_INFO(this->get_logger(), "Current: %d %d %d"
-      //   , current[0], current[1], current[2]);
       std::array<int,3> prev_index = came_from.at(current_local);
       current_local = prev_index;
 

@@ -132,7 +132,7 @@ void VoxelMapper::process_points(){
         temp_point[2] += _position[2];
 
         // avoid making floor voxels for performance
-        if (temp_point[2]>0){
+        if (temp_point[2]>0.25){
             _voxel_grid->set_voxel_state({temp_point[0], temp_point[1], temp_point[2]}, VoxelState::OCCUPIED);
         }
         
