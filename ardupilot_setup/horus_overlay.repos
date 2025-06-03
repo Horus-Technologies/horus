@@ -1,5 +1,0 @@
-repositories:
-  ardupilot_gz:
-    type: git
-    url: https://github.com/mkuznets23/ardupilot_gz.git
-    version: horus
