@@ -1,9 +1,9 @@
 /*
-Mapper node for voxelization of a point cloud from Realsense Camera
+VoxelMapper node for voxelization of a point cloud from Realsense Camera
 */
 
-#ifndef MAPPER_H
-#define MAPPER_H
+#ifndef VOXEL_MAPPER_H
+#define VOXEL_MAPPER_H
 
 #include "VoxelGrid.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -22,10 +22,10 @@ Mapper node for voxelization of a point cloud from Realsense Camera
 
 using namespace std::chrono_literals;
 
-class Mapper : public rclcpp::Node
+class VoxelMapper : public rclcpp::Node
 {
     public:
-        Mapper(VoxelGrid* voxel_grid);
+        VoxelMapper(VoxelGrid* voxel_grid);
 
     private:
         void run();
@@ -58,4 +58,4 @@ class Mapper : public rclcpp::Node
         std::mutex _points_mutex;
 };
 
-#endif // MAPPER_H
+#endif // VOXEL_MAPPER_H
