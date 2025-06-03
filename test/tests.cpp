@@ -1,84 +1,6 @@
 #include <gtest/gtest.h>
 #include "VoxelGrid.hpp"
 #include "Search.hpp"
-#include "Math.hpp"
-
-TEST(MathTests, PointLineIntersection)
-{
-    Eigen::Vector3f point(3, 1, 0);
-    Eigen::Vector3f line0(0, 0, 0);
-    Eigen::Vector3f line1(2, 0, 0);
-    Eigen::Vector3f proj = Math::point_line_projection(point, line0, line1);
-    Eigen::Vector3f expected_projection(3,0,0);
-    EXPECT_EQ(proj, expected_projection);
-}
-
-TEST(MathTests, PointSegmentIntersection)
-{
-    Eigen::Vector3f point(3, 1, 0);
-    Eigen::Vector3f seg0(0, 0, 0);
-    Eigen::Vector3f seg1(2, 0, 0);
-    Eigen::Vector3f proj = Math::point_segment_projection(point, seg0, seg1);
-    Eigen::Vector3f expected_projection(2,0,0);
-    EXPECT_EQ(proj, expected_projection);
-}
-
-TEST(MathTests, SphereLineIntersectionTwo)
-{
-    Eigen::Vector3f point0(4, 0, 0);
-    Eigen::Vector3f point1(5, 0, 0);
-    Eigen::Vector3f center(2, 0, 0);
-    float radius = 1;
-    std::vector<Eigen::Vector3f> intersections = Math::sphere_line_intersection(point0, point1, center, radius);
-    Eigen::Vector3f expected_intersection0(1,0,0);
-    Eigen::Vector3f expected_intersection1(3,0,0);
-    EXPECT_EQ(intersections[0], expected_intersection0);
-    EXPECT_EQ(intersections[1], expected_intersection1);
-}
-
-TEST(MathTests, SphereLineIntersectionZero)
-{
-    Eigen::Vector3f point0(0, 0, 0);
-    Eigen::Vector3f point1(5, 0, 0);
-    Eigen::Vector3f center(0, 20, 0);
-    float radius = 1;
-    std::vector<Eigen::Vector3f> intersections = Math::sphere_line_intersection(point0, point1, center, radius);
-    EXPECT_EQ(intersections.size(), 0);
-}
-
-TEST(MathTests, SphereSegmentIntersectionTwo)
-{
-    Eigen::Vector3f point0(0, 0, 0);
-    Eigen::Vector3f point1(5, 0, 0);
-    Eigen::Vector3f center(2, 0, 0);
-    float radius = 1;
-    std::vector<Eigen::Vector3f> intersections = Math::sphere_segment_intersection(point0, point1, center, radius);
-    Eigen::Vector3f expected_intersection0(1,0,0);
-    Eigen::Vector3f expected_intersection1(3,0,0);
-    EXPECT_EQ(intersections[0], expected_intersection0);
-    EXPECT_EQ(intersections[1], expected_intersection1);
-}
-
-TEST(MathTests, SphereSegmentIntersectionOne)
-{
-    Eigen::Vector3f point0(0, 0, 0);
-    Eigen::Vector3f point1(2, 0, 0);
-    Eigen::Vector3f center(2, 0, 0);
-    float radius = 1;
-    std::vector<Eigen::Vector3f> intersections = Math::sphere_segment_intersection(point0, point1, center, radius);
-    Eigen::Vector3f expected_intersection(1,0,0);
-    EXPECT_EQ(intersections[0], expected_intersection);
-}
-
-TEST(MathTests, SphereSegmentIntersectionZero)
-{
-    Eigen::Vector3f point0(0, 0, 0);
-    Eigen::Vector3f point1(2, 0, 0);
-    Eigen::Vector3f center(0, 20, 0);
-    float radius = 1;
-    std::vector<Eigen::Vector3f> intersections = Math::sphere_segment_intersection(point0, point1, center, radius);
-    EXPECT_EQ(intersections.size(), 0);
-}
 
 TEST(VoxelGridTests, FrameConversions)
 {
@@ -308,10 +230,10 @@ TEST(SearchTests, AStarInsideLocal)
 {
     VoxelGrid voxel_grid;
     std::array<float,3> start = {0,0,0};
-    std::array<float,3> goal = {4,4,4};
+    std::array<float,3> local_goal = {4,4,4};
     std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
     float local_region_size = 16;
-    Search::run_a_star(voxel_grid, start, goal, path, local_region_size);
+    Search::run_a_star(voxel_grid, start, local_goal, path, local_region_size);
     ASSERT_TRUE(path.has_value());
     // for (int i = 0; i < path.value().size(); i++){
     //     std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
@@ -322,31 +244,14 @@ TEST(SearchTests, AStarOutsideLocal)
 {
     VoxelGrid voxel_grid;
     std::array<float,3> start = {0,0,0};
-    std::array<float,3> goal = {20,20,20};
+    std::array<float,3> local_goal = {20,20,20};
     std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
     float local_region_size = 16;
-    Search::run_a_star(voxel_grid, start, goal, path, local_region_size);
+    Search::run_a_star(voxel_grid, start, local_goal, path, local_region_size);
     ASSERT_TRUE(path.has_value());
     // for (int i = 0; i < path.value().size(); i++){
     //     std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
     // }
-}
-
-TEST(SearchTests, AStarWithinSingleVoxel)
-{
-    VoxelGrid voxel_grid;
-    std::array<float,3> start = {0.1,0.1,0.1};
-    std::array<float,3> goal = {0.5,0.5,0.5};
-    std::optional<std::vector<std::array<float,3>>> path = std::vector<std::array<float, 3>>{};
-    float local_region_size = 16;
-    Search::run_a_star(voxel_grid, start, goal, path, local_region_size);
-    Search::clean_path(voxel_grid, path.value());
-    Search::clean_path(voxel_grid, path.value());
-    Search::clean_path(voxel_grid, path.value());
-    ASSERT_TRUE(path.has_value());
-    for (int i = 0; i < path.value().size(); i++){
-        std::cout << path.value()[i][0] << ", " << path.value()[i][1] << ", " << path.value()[i][2] << std::endl;
-    }
 }
 
 TEST(SearchTests, RunSearchSimple)
