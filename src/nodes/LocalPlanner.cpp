@@ -28,7 +28,7 @@ LocalPlanner::LocalPlanner(VoxelGrid* voxel_grid)
 
     // Publishing
     _publisher = this->create_publisher<nav_msgs::msg::Path>("/local_plan/clean_path", 10); // waypoints with stamped pose
-    _timer = this->create_wall_timer(500ms, std::bind(&LocalPlanner::run, this));
+    _timer = this->create_wall_timer(300ms, std::bind(&LocalPlanner::run, this));
     _publisher_raw = this->create_publisher<visualization_msgs::msg::MarkerArray>("/local_plan/raw_markers", 10);
 
 }
@@ -43,8 +43,6 @@ void LocalPlanner::run()
     _last_pose_drone.pose.pose.position.z
   };
   
-  RCLCPP_INFO(this->get_logger(), "Start: %f %f %f"
-  , _start[0], _start[1], _start[2]);
   auto path = Search::run_search(*_voxel_grid, _start, _goal);
   if (!path.has_value()){
     RCLCPP_WARN(this->get_logger(), "Search unable to find path to goal!");
@@ -52,17 +50,12 @@ void LocalPlanner::run()
   else{
     visualize_path(path.value());
     Search::clean_path(*_voxel_grid, path.value());
-    Search::clean_path(*_voxel_grid, path.value());
-    Search::clean_path(*_voxel_grid, path.value());
-    Search::clean_path(*_voxel_grid, path.value());
-    Search::clean_path(*_voxel_grid, path.value());
     Search::clean_path(*_voxel_grid, path.value()); // 2nd clean_path() is for certain edge cases
   
     _last_path.poses.clear();
     
     // compute point on _start voxel that intersects with first 
     double total_path_time = 0.0;
-    int i = 0;
     std::array<float,3> prev_point = path.value().front();
     for(std::array<float,3> point : path.value())
     {
@@ -70,25 +63,12 @@ void LocalPlanner::run()
       pose.pose.position.x = point[0];
       pose.pose.position.y = point[1];
       pose.pose.position.z = point[2];
-      pose.pose.orientation.x = 0.00081;
+      pose.pose.orientation.x = 0.00081; // arbitrary orientation since this isn't used to control currently
       pose.pose.orientation.y = 0.000069;
       pose.pose.orientation.z = 0.703855;
       pose.pose.orientation.w = 0.710343;
-      if (i>0){
-        // compute timing for path
-        total_path_time = total_path_time + 1000 * sqrt(
-          pow(pose.pose.position.x - prev_point[0], 2) +
-          pow(pose.pose.position.y - prev_point[1], 2) +
-          pow(pose.pose.position.z - prev_point[2], 2));
-        pose.header.stamp.sec = static_cast<int32_t>(total_path_time);
-      }
-      else{
-        // start time at 0 for first waypoint
-        pose.header.stamp.sec = 0.0;
-      }
   
       _last_path.poses.push_back(pose);
-      i++;
       prev_point = point;
     }
     
