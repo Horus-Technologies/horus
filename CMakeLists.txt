@@ -35,9 +35,9 @@ include_directories(include)
 
 add_executable(fsm 
   src/nodes/FSM.cpp
-  src/nodes/MotionControl/GlobalPlanner.cpp
-  src/nodes/MotionControl/LocalPlanner.cpp
-  src/nodes/Perception/VoxelMapper.cpp  
+  src/nodes/motion_control/GlobalPlanner.cpp
+  src/nodes/motion_control/LocalPlanner.cpp
+  src/nodes/perception/VoxelMapper.cpp  
   src/lib/VoxelGrid.cpp
   src/lib/Search.cpp
   src/lib/Chunk.cpp
@@ -54,7 +54,7 @@ ament_target_dependencies(fsm
 
 # Create Cpp executable for trajectory_controller
 add_executable(trajectory_controller
-  src/nodes/MotionControl/TrajectoryController.cpp
+  src/nodes/motion_control/TrajectoryController.cpp
 )
 ament_target_dependencies(trajectory_controller
   rclcpp
@@ -65,8 +65,8 @@ ament_target_dependencies(trajectory_controller
 )
 
 add_executable(demo_voxel_mapper
-  src/nodes/Perception/DemoVoxelMapper.cpp
-  src/nodes/Perception/VoxelMapper.cpp
+  src/nodes/perception/DemoVoxelMapper.cpp
+  src/nodes/perception/VoxelMapper.cpp
   src/lib/VoxelGrid.cpp
   src/lib/Chunk.cpp
 )
