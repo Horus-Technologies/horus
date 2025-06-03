@@ -1,10 +1,12 @@
+> [!CAUTION]
+> This docker container setup is in progress and not ready for use!
+
+## Overview
+We are in the process of setting up a docker container to run our software in a standardized environment.
+
 ## Building
-Run the following:
-```
-docker run -it --rm \
-    -e DISPLAY=$DISPLAY \
-    -v /tmp/.X11-unix:/tmp/.X11-unix \
-    horus-vm
-```
+
+## Running
+
 
 
