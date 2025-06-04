@@ -47,7 +47,7 @@ Source: `src/motion_control/nodes`
 - **Hardware Testing**: Upcoming on Raspberry Pi 5 + Pixhawk 2.4.8
 
 Stay tuned for updates!
-## Requirements
+## 📋 Requirements
 - Ubuntu 22.04 (we use WSL2)
 - ROS2 Humble
 - Gazebo Harmonic
@@ -143,7 +143,7 @@ The drone will fly around from one random global goal point to another, and will
 
 This project is in active development, and we welcome any suggestions, advice, or contributions. Feel free to open an issue or start a discussion!
 
-## Next Steps
+## 🔧 Next Steps
 - [ ] Incorporate ORBSLAM3 into **Perception** module for improved drone localization and landmark localization.
 - [ ] Finite State Machine for mission logic in **Task Planning**
 - [ ] `ProbabilisticRoadmap` for `GlobalPlanner`
