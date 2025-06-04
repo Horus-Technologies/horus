@@ -143,6 +143,9 @@ As long as the drone is in mode `GUIDED`, it should begin flying along the path,
 The drone will fly around from one random global goal point to another, and will maintain a voxel grid like this:
 ![voxel map result](assets/voxel_map_result.png)
 
+## 🤝 Contributions Welcome
+
+This project is in active development, and we welcome any suggestions, advice, or contributions. Feel free to open an issue or start a discussion!
 
 ## Next Steps
 - [ ] Incorporate ORBSLAM3 into **Perception** module for improved drone localization and landmark localization.
