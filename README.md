@@ -39,7 +39,7 @@ The most developed part of the stack, **Motion Control** is organized into a hie
 
 Source: `src/motion_control/nodes`
 
-> 💡 Note: `GlobalPlanner` currently selects random goals. A PRM-based planner is in development.
+> Note: `GlobalPlanner` currently selects random goals. A PRM-based planner is in development.
 
 ---
 
@@ -96,8 +96,8 @@ ros2 launch ardupilot_gz_bringup iris_horus.launch.py
 ```
 
 You should see the following GUIs pop up:
-![[assets/Pasted image 20250530134506.png]]
-![[assets/Pasted image 20250530134436.png]]
+![launched gazebo](assets/Pasted image 20250530134506.png)
+![launched rviz](assets/Pasted image 20250530134436.png)
 
 ### Takeoff
 Mavproxy or any other ground control software (GCS) can be used to put the drone in the air and ready to receive commands from ROS.
@@ -117,7 +117,7 @@ takeoff 3
 ```
 
 Now the drone should be in the air as such:
-![[assets/Pasted image 20250601135458.png]]
+![drone flying](assets/Pasted image 20250601135458.png)
 
 ### Run Drone Autonomy
 
@@ -127,7 +127,7 @@ cd ~/drone_ws && source install/setup.bash
 ros2 run horus fsm
 ```
 This will spool up the VoxelMapper, LocalPlanner, and GlobalPlanner nodes and you should see the following red voxels and local path as the green line:
-![[assets/Pasted image 20250601135600.png]]
+![fsm activated](assets/Pasted image 20250601135600.png)
 
 Finally to get the drone to start tracking the path with a pure pursuit controller, open up another terminal and run
 ```
@@ -136,10 +136,10 @@ ros2 run horus trajectory_controller
 ```
 
 As long as the drone is in mode `GUIDED`, it should begin flying along the path, with an axes marker indicating the location of its lookahead point:
-![[assets/Pasted image 20250601135844.png]]
+![trajectory controller started](assets/Pasted image 20250601135844.png)
 
 The drone will fly around from one random global goal point to another, and will maintain a voxel grid like this:
-![[assets/Pasted image 20250601140105.png]]
+![voxel map result](assets/Pasted image 20250601140105.png)
 
 
 ## Next Steps
