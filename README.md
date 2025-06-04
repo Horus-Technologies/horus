@@ -12,7 +12,6 @@ The autonomy stack is organized into three major subsystems:
 - **Task Planning** – High-level decision making and mission logic
 - **Motion Control** – Path planning and control for executing navigation tasks
 
----
 
 ### 👁️ Perception
 
@@ -23,13 +22,11 @@ The **Perception** subsystem currently includes the `Mapper` node, which convert
 
 Source: `src/perception/nodes`
 
----
 
 ### 🧠 Task Planning
 
 This subsystem is under development. It will be based on a **finite state machine (FSM)** for executing mission-level logic. A future feature includes integrating an **LLM agent** to convert natural language prompts into FSMs composed of pre-implemented task primitives.
 
----
 
 ### 🚀 Motion Control
 
@@ -43,7 +40,6 @@ Source: `src/motion_control/nodes`
 
 > Note: `GlobalPlanner` currently selects random goals. A PRM-based planner is in development.
 
----
 
 ### 🧪 Testing
 
@@ -52,10 +48,10 @@ Source: `src/motion_control/nodes`
 
 Stay tuned for updates!
 ## Requirements
-Ubuntu 22.04 (we use WSL2)
-ROS2 Humble
-Gazebo Harmonic
-Ardupilot SITL
+- Ubuntu 22.04 (we use WSL2)
+- ROS2 Humble
+- Gazebo Harmonic
+- Ardupilot SITL
 ## Running
 We have been running everything in WSL2 (distro Ubuntu 22.04). Aside from a few rare glitches that require restarting with `wsl --shutdown`, it has been working great.
 
