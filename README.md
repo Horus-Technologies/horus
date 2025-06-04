@@ -1,6 +1,8 @@
 ## Welcome to Horus
 
-**Horus** is an end-to-end autonomy stack for companion computers running on ArduPilot/PX4 drones. Built with **ROS 2 Humble**, it is designed to be readily deployable and extensible for real-world robotics applications. Currently, it integrates with ArduPilot SITL, with PX4 support coming soon.
+**Horus** is an end-to-end autonomy stack for ArduPilot/PX4 drones, built with ROS 2. It focuses on enabling drone navigation in cluttered environments using onboard perception, planning, and control. Currently, it integrates with ArduPilot SITL, with PX4 support coming soon.
+
+The system is in early development and not yet capable of effective navigation through dense obstacles, but this challenge actively drives its design and long-term vision.
 
 ### 📦 Architecture Overview
 
