@@ -139,6 +139,9 @@ As long as the drone is in mode `GUIDED`, it should begin flying along the path,
 The drone will fly around from one random global goal point to another, and will maintain a voxel grid like this:
 ![voxel map result](assets/voxel_map_result.png)
 
+Here is a 10x sped up video of it in action:
+![10x demo video](https://www.youtube.com/watch?v=EEtwEGAUKy8)
+
 ## 🤝 Contributions Welcome
 
 This project is in active development, and we welcome any suggestions, advice, or contributions. Feel free to open an issue or start a discussion!
