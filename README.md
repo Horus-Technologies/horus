@@ -136,11 +136,9 @@ ros2 run horus trajectory_controller
 As long as the drone is in mode `GUIDED`, it should begin flying along the path, with an axes marker indicating the location of its lookahead point:
 ![trajectory controller started](assets/trajectory_controller_started.png)
 
-The drone will fly around from one random global goal point to another, and will maintain a voxel grid like this:
-![voxel map result](assets/voxel_map_result.png)
+The drone will fly around from one random global goal point to another, and will maintain a voxel grid like this (10x sped up):
+[![Demo Video](assets/voxel_map_result.png)](https://www.youtube.com/watch?v=EEtwEGAUKy8)
 
-Here is a 10x sped up video of it in action:
-![10x demo video](https://www.youtube.com/watch?v=EEtwEGAUKy8)
 
 ## 🤝 Contributions Welcome
 
