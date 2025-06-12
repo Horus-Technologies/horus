@@ -45,6 +45,7 @@ Source: `src/motion_control/nodes`
 
 - **Unit Tests**: Implemented using `gtest`, located in `test/tests.cpp`
 - **Hardware Testing**: Upcoming on Raspberry Pi 5 + Pixhawk 2.4.8
+<img src="assets/hardware.jpg" alt="hardware" width="300"/>
 
 Stay tuned for updates!
 ## 📋 Requirements
@@ -136,8 +137,9 @@ ros2 run horus trajectory_controller
 As long as the drone is in mode `GUIDED`, it should begin flying along the path, with an axes marker indicating the location of its lookahead point:
 ![trajectory controller started](assets/trajectory_controller_started.png)
 
-The drone will fly around from one random global goal point to another, and will maintain a voxel grid like this:
-![voxel map result](assets/voxel_map_result.png)
+The drone will fly around from one random global goal point to another, and will maintain a voxel grid.
+![Demo Video](assets/voxel_map_result.png)
+[▶️ Click here](https://www.youtube.com/watch?v=EEtwEGAUKy8) to see the autonomous navigation in action!
 
 ## 🤝 Contributions Welcome
 
