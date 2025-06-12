@@ -45,7 +45,7 @@ Source: `src/motion_control/nodes`
 
 - **Unit Tests**: Implemented using `gtest`, located in `test/tests.cpp`
 - **Hardware Testing**: Upcoming on Raspberry Pi 5 + Pixhawk 2.4.8
-![hardware](assets/hardware.jpg)
+<img src="assets/hardware.jpg" alt="hardware" width="300"/>
 
 Stay tuned for updates!
 ## 📋 Requirements
