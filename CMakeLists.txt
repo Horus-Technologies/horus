@@ -41,6 +41,7 @@ add_executable(fsm
   src/lib/VoxelGrid.cpp
   src/lib/Search.cpp
   src/lib/Chunk.cpp
+  src/lib/BoundedVolumeMap.cpp
 )
 ament_target_dependencies(fsm
   rclcpp

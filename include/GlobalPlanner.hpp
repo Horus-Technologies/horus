@@ -3,6 +3,7 @@
 #define GLOBAL_PLANNER_H
 
 #include "VoxelGrid.hpp"
+#include "BoundedVolumeMap.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
